@@ -1,19 +1,20 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { JwtService } from '@nestjs/jwt';
 
-import { AuthDto } from './auth.dto';
 import { IAuthPayload, IAuthResponse } from './auth.interface';
 import { UserService } from '../user/user.service';
 import { Encrypt } from '../utility/encrypt';
-import { JwtService } from '@nestjs/jwt';
 import { USER_SESSION_KEY } from '../utility/common.constant';
+import { User } from '../user/user.entity';
+import { UserDto } from '../user/dto/user.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,42 +29,50 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(loginBody: AuthDto): Promise<IAuthResponse> {
+  async validateUser(username: string, password: string) {
+    this.logger.log({
+      message: {
+        function: this.validateUser.name,
+        data: { username },
+      },
+    });
+
+    if (!username || !password) {
+      throw new BadRequestException('Username or password is invalid');
+    }
+
+    try {
+      const user = await this.userService.getByUsername(username);
+      if (!user) return null;
+
+      const passwordValidated = await this.validatePassword(
+        password,
+        user.password,
+      );
+      if (!passwordValidated) return null;
+
+      delete user.password;
+      return user;
+    } catch (error) {
+      this.logger.error({
+        message: {
+          function: this.validateUser.name,
+          message: error.message,
+        },
+      });
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async login(user: User): Promise<IAuthResponse> {
     this.logger.log({
       message: {
         function: this.login.name,
-        data: { username: loginBody.username },
+        data: { username: user.username },
       },
     });
 
     try {
-      const user = await this.userService.getUserByUsername(loginBody.username);
-      if (!user) {
-        this.logger.error({
-          message: {
-            function: this.login.name,
-            message: 'User not found',
-            data: { username: loginBody.username },
-          },
-        });
-        throw new UnauthorizedException('Username is incorrect');
-      }
-
-      const passwordValidated = await this.validatePassword(
-        loginBody.password,
-        user.password,
-      );
-      if (!passwordValidated) {
-        this.logger.warn({
-          message: {
-            function: this.login.name,
-            message: 'Password mismatch',
-            data: { username: loginBody.username },
-          },
-        });
-        throw new UnauthorizedException('Password is incorrect');
-      }
-
       let accessToken = await this.getTokenCache(user.id);
 
       if (!accessToken) {
@@ -80,7 +89,7 @@ export class AuthService {
             message: {
               function: this.login.name,
               message: error.message,
-              userId: loginBody.username,
+              username: user.username,
             },
           });
         }
@@ -88,7 +97,41 @@ export class AuthService {
 
       return { accessToken } as IAuthResponse;
     } catch (error) {
-      throw new UnauthorizedException('Username or password is incorrect');
+      this.logger.error({
+        message: {
+          function: this.login.name,
+          message: error.message,
+          username: user.username,
+        },
+      });
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async register(userData: UserDto): Promise<IAuthResponse> {
+    this.logger.log({
+      message: {
+        function: this.register.name,
+        data: { username: userData.username },
+      },
+    });
+
+    try {
+      const user = await this.userService.create(userData);
+
+      return this.login(user);
+    } catch (error) {
+      this.logger.error({
+        message: {
+          function: this.register.name,
+          message: error.message,
+          data: { username: userData.username },
+        },
+      });
+      if (error.status === 400) {
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException();
     }
   }
 
@@ -154,7 +197,6 @@ export class AuthService {
     inputPassword: string,
     databasePassword: string,
   ): Promise<boolean> {
-    return inputPassword === databasePassword;
     return this.encrypt.verify(inputPassword, databasePassword);
   }
 }
