@@ -34,7 +34,10 @@ export class UserService {
     });
 
     try {
-      return this.userRepository.findOneBy({ username });
+      return this.userRepository.findOneBy({
+        username,
+        status: EStatus.ENABLED,
+      });
     } catch (error) {
       this.logger.error({
         message: {
@@ -58,6 +61,7 @@ export class UserService {
     try {
       const existedUser = await this.userRepository.findOneBy({
         username: userData.username,
+        status: EStatus.ENABLED,
       });
       if (existedUser) {
         throw new BadRequestException('User is already exists');
