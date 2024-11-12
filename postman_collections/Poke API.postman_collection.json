@@ -45,7 +45,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"username\": \"{username}\",\r\n    \"password\": \"{passowrd}\"\r\n}",
+							"raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{password}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -62,7 +62,8 @@
 								"auth",
 								"login"
 							]
-						}
+						},
+						"description": "### Login API\n\nThis API endpoint is used to authenticate and log in a user.\n\n#### Request Body\n\n- username (string, required): The username of the user.\n    \n- password (string, required): The password of the user.\n    \n\n#### Response\n\nThe response of this request is a JSON object with the following properties:\n\n- accessToken (string): The authentication token for the logged-in user.\n    \n\n``` json\n{\n    \"type\": \"object\",\n    \"properties\": {\n        \"token\": {\n            \"type\": \"string\"\n        }\n    }\n}\n\n ```"
 					},
 					"response": []
 				},
@@ -102,7 +103,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"username\": \"{username}\",\r\n    \"password\": \"{passowrd}\"\r\n}",
+							"raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{passowrd}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -119,7 +120,8 @@
 								"auth",
 								"register"
 							]
-						}
+						},
+						"description": "### Register User\n\nThis endpoint is used to register a new user.\n\n#### Request Body\n\n- `username` (string) - The username of the user.\n    \n- `password` (string) - The password for the user account.\n    \n\n#### Response\n\nThe response of this request is a JSON object with the following properties:\n\n- accessToken (string): The authentication token for the logged-in user.\n    \n\n``` json\n{\n    \"type\": \"object\",\n    \"properties\": {\n        \"token\": {\n            \"type\": \"string\"\n        }\n    }\n}\n\n ```"
 					},
 					"response": []
 				},
@@ -157,7 +159,8 @@
 								"auth",
 								"logout"
 							]
-						}
+						},
+						"description": "The `POST /api/auth/logout` endpoint is used to log out the authenticated user. Upon successful logout, the response http status will be 200."
 					},
 					"response": []
 				}
@@ -201,7 +204,8 @@
 								"pokemon",
 								"random"
 							]
-						}
+						},
+						"description": "### Get Random Pokemon\n\nThis endpoint makes an HTTP GET request to retrieve a random Pokemon from the API.\n\n#### Response\n\nThe response of this request is a JSON object representing the name of the random Pokemon. You can refer to the JSON schema below to understand the structure of the response.\n\n``` json\n{\n    \"name\": \"string\"\n}\n\n ```"
 					},
 					"response": []
 				},
@@ -230,7 +234,8 @@
 								"pokemon",
 								"{name}"
 							]
-						}
+						},
+						"description": "# Get Pokemon Details\n\nThis endpoint retrieves details of a specific Pokemon by providing the name of the Pokemon in the URL.\n\n## Request\n\n### Request URL\n\n- `GET /api/pokemon/{name}`\n    \n\n### Request Parameters\n\n- `name` (path) : The name of the Pokemon for which details are to be retrieved.\n    \n\n## Response\n\nUpon a successful request, the response will contain the details of the specified Pokemon, including its abilities, types, and other relevant information.\n\n``` json\n{\n    \"properties\": {\n        \"name\": {\n            \"type\": \"string\"\n        },\n        \"types\": {\n            \"type\": \"string\"\n        },\n        \"weight\": {\n            \"type\": \"number\"\n        },\n        \"height\": {\n            \"type\": \"number\"\n        },\n        \"abilities\": {\n            \"type\": \"array\"\n        },\n        \"species\": {\n            \"type\": \"string\"\n        },\n        \"forms\": {\n            \"type\": \"array\"\n        },\n   }\n}\n\n ```"
 					},
 					"response": []
 				},
@@ -260,12 +265,13 @@
 								"{name}",
 								"ability"
 							]
-						}
+						},
+						"description": "### Get Pokemon Ability\n\nThis endpoint makes an HTTP GET request to retrieve the ability of a specific Pokemon.\n\n### Request URL\n\n- `GET /api/pokemon/{name}/ability`\n    \n\n#### Request Parameters\n\n- `name` (path) : The name of the Pokemon for which abilities are to be retrieved.\n    \n\n#### Response\n\nThe response of this request is a JSON object representing the ability of the specified Pokemon. You can refer to the JSON schema below to understand the structure of the response.\n\n``` json\n{\n    \"type\": \"array\"\n}\n\n ```"
 					},
 					"response": []
 				}
 			],
-			"description": "Pokemon data from PokeAPI."
+			"description": "Pokemon data APIs."
 		},
 		{
 			"name": "Health Check",
@@ -280,7 +286,8 @@
 					"path": [
 						"api"
 					]
-				}
+				},
+				"description": "This endpoint makes an HTTP GET request to the specified base URL followed by /api. The response of this request is a welcome text from api.\n\n```\nHello World!\n\n ```"
 			},
 			"response": []
 		}
