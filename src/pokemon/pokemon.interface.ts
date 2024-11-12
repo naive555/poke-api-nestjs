@@ -2,6 +2,10 @@ export interface IPokemonName {
   name: string;
 }
 
+export interface IPokemonAbility {
+  abilities: string[];
+}
+
 export interface IPokeApiNameAndUrl {
   name: string;
   url: string;

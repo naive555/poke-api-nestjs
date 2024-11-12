@@ -19,6 +19,7 @@ import {
   IPokeApiList,
   IPokeApiNameAndUrl,
   IPokemon,
+  IPokemonAbility,
   IPokemonName,
 } from './pokemon.interface';
 
@@ -108,7 +109,7 @@ export class PokemonService {
     }
   }
 
-  async findAbilitiesByName(name: string): Promise<string[]> {
+  async findAbilitiesByName(name: string): Promise<IPokemonAbility> {
     this.logger.log({
       message: {
         function: this.findAbilitiesByName.name,
@@ -117,7 +118,7 @@ export class PokemonService {
     });
 
     try {
-      const abilitiesCache = await this.cacheManager.get<string[]>(
+      const abilitiesCache = await this.cacheManager.get<IPokemonAbility>(
         `${POKEMON_KEY}:${name}:abilities`,
       );
       if (abilitiesCache) {
@@ -125,15 +126,15 @@ export class PokemonService {
       }
 
       const pokemon = await this.getPokemon(name);
-      const abilityNames = pokemon.abilities.map((ability) => ability);
+      const abilities = { abilities: pokemon.abilities };
 
       await this.cacheManager.set(
         `${POKEMON_KEY}:${name}:abilities`,
-        abilityNames,
+        abilities,
         POKEMON_CACHE_DURATION,
       );
 
-      return abilityNames;
+      return abilities;
     } catch (error) {
       this.logger.error({
         message: {

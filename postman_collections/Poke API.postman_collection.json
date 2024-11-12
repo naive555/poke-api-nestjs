@@ -2,6 +2,7 @@
 	"info": {
 		"_postman_id": "00f8cb89-7c9b-45dd-b716-aae4c4298c48",
 		"name": "Poke API",
+		"description": "A group of apis to get and caching data from PokeAPI.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "8388030"
 	},
@@ -103,7 +104,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{passowrd}}\"\r\n}",
+							"raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{password}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -205,7 +206,7 @@
 								"random"
 							]
 						},
-						"description": "### Get Random Pokemon\n\nThis endpoint makes an HTTP GET request to retrieve a random Pokemon from the API.\n\n#### Response\n\nThe response of this request is a JSON object representing the name of the random Pokemon. You can refer to the JSON schema below to understand the structure of the response.\n\n``` json\n{\n    \"name\": \"string\"\n}\n\n ```"
+						"description": "### Get Random Pokemon\n\nThis endpoint makes an HTTP GET request to retrieve a random Pokemon from the API.\n\n#### Response\n\nThe response of this request is a JSON object representing the name of the random Pokemon. You can refer to the JSON schema below to understand the structure of the response.\n\n``` json\n{\n    \"type\": \"object\",\n    \"properties\": {\n        \"name\": {\n            \"type\": \"string\"\n        }\n    }\n}\n\n ```"
 					},
 					"response": []
 				},
@@ -235,7 +236,7 @@
 								"{name}"
 							]
 						},
-						"description": "# Get Pokemon Details\n\nThis endpoint retrieves details of a specific Pokemon by providing the name of the Pokemon in the URL.\n\n## Request\n\n### Request URL\n\n- `GET /api/pokemon/{name}`\n    \n\n### Request Parameters\n\n- `name` (path) : The name of the Pokemon for which details are to be retrieved.\n    \n\n## Response\n\nUpon a successful request, the response will contain the details of the specified Pokemon, including its abilities, types, and other relevant information.\n\n``` json\n{\n    \"properties\": {\n        \"name\": {\n            \"type\": \"string\"\n        },\n        \"types\": {\n            \"type\": \"string\"\n        },\n        \"weight\": {\n            \"type\": \"number\"\n        },\n        \"height\": {\n            \"type\": \"number\"\n        },\n        \"abilities\": {\n            \"type\": \"array\"\n        },\n        \"species\": {\n            \"type\": \"string\"\n        },\n        \"forms\": {\n            \"type\": \"array\"\n        },\n   }\n}\n\n ```"
+						"description": "# Get Pokemon Details\n\nThis endpoint retrieves details of a specific Pokemon by providing the name of the Pokemon in the URL.\n\n## Request\n\n### Request URL\n\n- `GET /api/pokemon/{name}`\n    \n\n### Request Parameters\n\n- `name` (path) : The name of the Pokemon for which details are to be retrieved.\n    \n\n## Response\n\nUpon a successful request, the response will contain the details of the specified Pokemon, including its abilities, types, and other relevant information.\n\n``` json\n{\n    \"type\": \"object\",\n    \"properties\": {\n        \"name\": {\n            \"type\": \"string\"\n        },\n        \"types\": {\n            \"type\": \"string\"\n        },\n        \"weight\": {\n            \"type\": \"number\"\n        },\n        \"height\": {\n            \"type\": \"number\"\n        },\n        \"abilities\": {\n            \"type\": \"array\"\n        },\n        \"species\": {\n            \"type\": \"string\"\n        },\n        \"forms\": {\n            \"type\": \"array\"\n        }\n   }\n}\n\n ```"
 					},
 					"response": []
 				},
@@ -266,7 +267,7 @@
 								"ability"
 							]
 						},
-						"description": "### Get Pokemon Ability\n\nThis endpoint makes an HTTP GET request to retrieve the ability of a specific Pokemon.\n\n### Request URL\n\n- `GET /api/pokemon/{name}/ability`\n    \n\n#### Request Parameters\n\n- `name` (path) : The name of the Pokemon for which abilities are to be retrieved.\n    \n\n#### Response\n\nThe response of this request is a JSON object representing the ability of the specified Pokemon. You can refer to the JSON schema below to understand the structure of the response.\n\n``` json\n{\n    \"type\": \"array\"\n}\n\n ```"
+						"description": "### Get Pokemon Ability\n\nThis endpoint makes an HTTP GET request to retrieve the ability of a specific Pokemon.\n\n### Request URL\n\n- `GET /api/pokemon/{name}/ability`\n    \n\n#### Request Parameters\n\n- `name` (path) : The name of the Pokemon for which abilities are to be retrieved.\n    \n\n#### Response\n\nThe response of this request is a JSON object representing the ability of the specified Pokemon. You can refer to the JSON schema below to understand the structure of the response.\n\n``` json\n{\n    \"type\": \"object\",\n    \"properties\": {\n        \"abilities\": {\n            \"type\": \"array\"\n        }\n    }\n}\n\n ```"
 					},
 					"response": []
 				}
