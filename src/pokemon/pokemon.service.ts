@@ -10,7 +10,10 @@ import {
 import { AxiosError } from 'axios';
 import { catchError, firstValueFrom } from 'rxjs';
 
-import { POKEMON_CACHE_TIMEOUT, POKEMON_KEY } from '../utility/common.constant';
+import {
+  POKEMON_CACHE_DURATION,
+  POKEMON_KEY,
+} from '../utility/common.constant';
 import {
   IPokeApi,
   IPokeApiList,
@@ -48,7 +51,7 @@ export class PokemonService {
       await this.cacheManager.set(
         POKEMON_KEY,
         pokemonNames,
-        POKEMON_CACHE_TIMEOUT,
+        POKEMON_CACHE_DURATION,
       );
 
       return {
@@ -86,7 +89,7 @@ export class PokemonService {
       await this.cacheManager.set(
         `${POKEMON_KEY}:${name}`,
         pokemon,
-        POKEMON_CACHE_TIMEOUT,
+        POKEMON_CACHE_DURATION,
       );
 
       return pokemon;
@@ -127,7 +130,7 @@ export class PokemonService {
       await this.cacheManager.set(
         `${POKEMON_KEY}:${name}:abilities`,
         abilityNames,
-        POKEMON_CACHE_TIMEOUT,
+        POKEMON_CACHE_DURATION,
       );
 
       return abilityNames;
