@@ -11,6 +11,7 @@ import { AxiosError } from 'axios';
 import { catchError, firstValueFrom } from 'rxjs';
 
 import {
+  POKE_API_URL,
   POKEMON_CACHE_DURATION,
   POKEMON_KEY,
 } from '../utility/common.constant';
@@ -153,9 +154,7 @@ export class PokemonService {
   private async getPokemons(): Promise<IPokeApiNameAndUrl[]> {
     const { data } = await firstValueFrom(
       this.httpService
-        .get<IPokeApiList>(
-          'https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0',
-        )
+        .get<IPokeApiList>(`${POKE_API_URL}/pokemon?limit=100000&offset=0`)
         .pipe(
           catchError((error: AxiosError) => {
             this.logger.error({
@@ -174,22 +173,20 @@ export class PokemonService {
 
   private async getPokemon(name: string): Promise<IPokemon> {
     const { data } = await firstValueFrom(
-      this.httpService
-        .get<IPokeApi>(`https://pokeapi.co/api/v2/pokemon/${name}`)
-        .pipe(
-          catchError((error: AxiosError) => {
-            this.logger.error({
-              message: {
-                function: this.getPokemon.name,
-                error: error.response.data,
-              },
-            });
-            if (error.response.status === 404) {
-              throw new NotFoundException('Pokemon not found');
-            }
-            throw new InternalServerErrorException(error.response.data);
-          }),
-        ),
+      this.httpService.get<IPokeApi>(`${POKE_API_URL}/pokemon/${name}`).pipe(
+        catchError((error: AxiosError) => {
+          this.logger.error({
+            message: {
+              function: this.getPokemon.name,
+              error: error.response.data,
+            },
+          });
+          if (error.response.status === 404) {
+            throw new NotFoundException('Pokemon not found');
+          }
+          throw new InternalServerErrorException(error.response.data);
+        }),
+      ),
     );
 
     return {
