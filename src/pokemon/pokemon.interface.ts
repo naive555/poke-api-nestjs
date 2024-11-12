@@ -1,25 +1,46 @@
-export interface IPokemonResponse {
+export interface IPokemonName {
   name: string;
 }
 
-export interface IPokeApiName {
+export interface IPokeApiNameAndUrl {
   name: string;
   url: string;
 }
 
-export interface IPokeApiResponseList {
+export interface IPokeApiList {
   count: number;
   next: string | null;
   previous: string | null;
-  results: IPokeApiName[];
+  results: IPokeApiNameAndUrl[];
 }
 
-export interface IPokeApiResponse {
-  abilities: IPokeAbility[];
+export interface IPokeAbility {
+  ability: IPokeApiNameAndUrl;
   is_hidden: boolean;
   slot: number;
 }
 
-export interface IPokeAbility {
-  ability: IPokeApiName;
+export interface IPokeTypes {
+  slot: number;
+  type: IPokeApiNameAndUrl;
+}
+
+export interface IPokeApi {
+  abilities: IPokeAbility[] | null;
+  forms?: IPokeApiNameAndUrl[] | null;
+  height: number;
+  name: string;
+  species: IPokeApiNameAndUrl;
+  types?: IPokeTypes[] | null;
+  weight: number;
+}
+
+export interface IPokemon {
+  name: string;
+  types: string[];
+  weight: number;
+  height: number;
+  abilities: string[];
+  species: string;
+  forms: string[];
 }

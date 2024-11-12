@@ -5,17 +5,19 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
-import { catchError, firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
+import { catchError, firstValueFrom } from 'rxjs';
 
-import {
-  IPokeApiResponseList,
-  IPokeApiResponse,
-  IPokemonResponse,
-  IPokeAbility,
-} from './pokemon.interface';
 import { POKEMON_CACHE_TIMEOUT, POKEMON_KEY } from '../utility/common.constant';
+import {
+  IPokeApi,
+  IPokeApiList,
+  IPokeApiNameAndUrl,
+  IPokemon,
+  IPokemonName,
+} from './pokemon.interface';
 
 @Injectable()
 export class PokemonService {
@@ -27,7 +29,7 @@ export class PokemonService {
     private readonly httpService: HttpService,
   ) {}
 
-  async random(): Promise<IPokemonResponse> {
+  async random(): Promise<IPokemonName> {
     this.logger.log({
       message: { function: this.random.name },
     });
@@ -40,25 +42,8 @@ export class PokemonService {
         };
       }
 
-      const { data } = await firstValueFrom(
-        this.httpService
-          .get<IPokeApiResponseList>(
-            'https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0',
-          )
-          .pipe(
-            catchError((error: AxiosError) => {
-              this.logger.error({
-                message: {
-                  function: this.random.name,
-                  error: error.response.data,
-                },
-              });
-              throw new InternalServerErrorException();
-            }),
-          ),
-      );
-
-      const pokemonNames = data.results.map((pokemon) => pokemon.name);
+      const pokemons = await this.getPokemons();
+      const pokemonNames = pokemons.map((pokemon) => pokemon.name);
 
       await this.cacheManager.set(
         POKEMON_KEY,
@@ -67,20 +52,20 @@ export class PokemonService {
       );
 
       return {
-        name: pokemonNames[Math.floor(Math.random() * data.results.length)],
+        name: pokemonNames[Math.floor(Math.random() * pokemonNames.length)],
       };
     } catch (error) {
       this.logger.error({
         message: {
           function: this.random.name,
-          error: error.message,
+          message: error.message,
         },
       });
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(error.message);
     }
   }
 
-  async findByName(name: string) {
+  async findByName(name: string): Promise<IPokemon> {
     this.logger.log({
       message: {
         function: this.findByName.name,
@@ -89,36 +74,22 @@ export class PokemonService {
     });
 
     try {
-      const pokemonCache = await this.cacheManager.get<IPokeApiResponse>(
+      const pokemonCache = await this.cacheManager.get<IPokemon>(
         `${POKEMON_KEY}:${name}`,
       );
       if (pokemonCache) {
         return pokemonCache;
       }
 
-      const { data } = await firstValueFrom(
-        this.httpService
-          .get<IPokeApiResponse>(`https://pokeapi.co/api/v2/pokemon/${name}`)
-          .pipe(
-            catchError((error: AxiosError) => {
-              this.logger.error({
-                message: {
-                  function: this.findByName.name,
-                  error: error.response.data,
-                },
-              });
-              throw new InternalServerErrorException();
-            }),
-          ),
-      );
+      const pokemon = await this.getPokemon(name);
 
       await this.cacheManager.set(
         `${POKEMON_KEY}:${name}`,
-        data,
+        pokemon,
         POKEMON_CACHE_TIMEOUT,
       );
 
-      return data;
+      return pokemon;
     } catch (error) {
       this.logger.error({
         message: {
@@ -127,11 +98,14 @@ export class PokemonService {
           data: { name },
         },
       });
-      throw new InternalServerErrorException();
+      if (error.status === 404) {
+        throw new NotFoundException(error.message);
+      }
+      throw new InternalServerErrorException(error.message);
     }
   }
 
-  async findAbilitiesByName(name: string) {
+  async findAbilitiesByName(name: string): Promise<string[]> {
     this.logger.log({
       message: {
         function: this.findAbilitiesByName.name,
@@ -140,36 +114,23 @@ export class PokemonService {
     });
 
     try {
-      const abilitiesCache = await this.cacheManager.get<IPokeAbility[]>(
+      const abilitiesCache = await this.cacheManager.get<string[]>(
         `${POKEMON_KEY}:${name}:abilities`,
       );
       if (abilitiesCache) {
         return abilitiesCache;
       }
 
-      const { data } = await firstValueFrom(
-        this.httpService
-          .get<IPokeApiResponse>(`https://pokeapi.co/api/v2/pokemon/${name}`)
-          .pipe(
-            catchError((error: AxiosError) => {
-              this.logger.error({
-                message: {
-                  function: this.findAbilitiesByName.name,
-                  error: error.response.data,
-                },
-              });
-              throw new InternalServerErrorException();
-            }),
-          ),
-      );
+      const pokemon = await this.getPokemon(name);
+      const abilityNames = pokemon.abilities.map((ability) => ability);
 
       await this.cacheManager.set(
         `${POKEMON_KEY}:${name}:abilities`,
-        data.abilities,
+        abilityNames,
         POKEMON_CACHE_TIMEOUT,
       );
 
-      return data.abilities;
+      return abilityNames;
     } catch (error) {
       this.logger.error({
         message: {
@@ -178,7 +139,63 @@ export class PokemonService {
           data: { name },
         },
       });
-      throw new InternalServerErrorException();
+      if (error.status === 404) {
+        throw new NotFoundException(error.message);
+      }
+      throw new InternalServerErrorException(error.message);
     }
+  }
+
+  private async getPokemons(): Promise<IPokeApiNameAndUrl[]> {
+    const { data } = await firstValueFrom(
+      this.httpService
+        .get<IPokeApiList>(
+          'https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0',
+        )
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error({
+              message: {
+                function: this.getPokemons.name,
+                error: error.response.data,
+              },
+            });
+            throw new InternalServerErrorException(error.response.data);
+          }),
+        ),
+    );
+
+    return data.results;
+  }
+
+  private async getPokemon(name: string): Promise<IPokemon> {
+    const { data } = await firstValueFrom(
+      this.httpService
+        .get<IPokeApi>(`https://pokeapi.co/api/v2/pokemon/${name}`)
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error({
+              message: {
+                function: this.getPokemon.name,
+                error: error.response.data,
+              },
+            });
+            if (error.response.status === 404) {
+              throw new NotFoundException('Pokemon not found');
+            }
+            throw new InternalServerErrorException(error.response.data);
+          }),
+        ),
+    );
+
+    return {
+      name: data.name,
+      types: data.types?.map((element) => element.type.name) || [],
+      weight: data.weight,
+      height: data.height,
+      abilities: data.abilities?.map((element) => element.ability.name) || [],
+      species: data.species.name,
+      forms: data.forms?.map((element) => element.name) || [],
+    };
   }
 }
