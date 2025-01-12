@@ -4,11 +4,11 @@ import { compare, genSalt, hash } from 'bcrypt';
 export class Encrypt {
   constructor(private readonly configService: ConfigService) {}
 
-  async encode(s: string): Promise<string> {
+  async encode(text: string): Promise<string> {
     try {
-      if (!s) throw new Error('Value for encrypt is empty.');
+      if (!text) throw new Error('Value for encrypt is empty.');
 
-      const encoded = await hash(s, 10);
+      const encoded = await hash(text, 10);
       if (!encoded) throw new Error('Encrypted value is invalid.');
 
       return encoded;
@@ -17,11 +17,11 @@ export class Encrypt {
     }
   }
 
-  async verify(s: string, encoded: string): Promise<boolean> {
-    if (!s || !encoded) return Promise.resolve(false);
+  async verify(text: string, encoded: string): Promise<boolean> {
+    if (!text || !encoded) return false;
 
     try {
-      return compare(s, encoded);
+      return compare(text, encoded);
     } catch (error) {
       throw error;
     }
@@ -29,11 +29,11 @@ export class Encrypt {
 
   async hashPassword(password: string) {
     try {
-      const saltRound = this.configService.get('bcrypt.saltRound') as number;
-      const salt = await genSalt(Number(saltRound));
+      const saltRound = this.configService.get<number>('bcrypt.saltRound');
+      const salt = await genSalt(saltRound);
       const hashpw = await hash(password, salt);
 
-      return Promise.resolve(hashpw);
+      return hashpw;
     } catch (error) {
       throw error;
     }
