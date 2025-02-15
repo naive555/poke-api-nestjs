@@ -2,13 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { useContainer } from 'class-validator';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import cors from '@fastify/cors';
+import compression from '@fastify/compress';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter() as FastifyAdapter,
+  );
 
+  app.register(compression);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
@@ -16,22 +25,28 @@ async function bootstrap() {
     }),
   );
 
-  const logger = new Logger('NestApplication');
-  const cors = configService.get('common.cors');
-  const name = configService.get('common.name');
-  const version = configService.get('common.version');
-  const environment = configService.get('common.environment');
-  const port = configService.get('common.port');
+  const configService = app.get(ConfigService);
 
-  if (cors) app.enableCors();
+  const logger = new Logger('NestApplication');
+  const isCorsEnabled = configService.get<boolean>('common.cors');
+  const name = configService.get<string>('common.name');
+  const version = configService.get<string>('common.version');
+  const environment = configService.get<string>('common.environment');
+  const port = configService.get<number>('common.port');
+
+  if (isCorsEnabled) {
+    await app.register(cors, {
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    });
+  }
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
-  await app.listen(port, () => {
-    logger.log(`${name} - ${version}`);
-    logger.log(`On ${environment} environment`);
-    logger.log(`Enable CORS ${cors}`);
-    logger.log(`Started on port ${port}`);
-  });
+  await app.listen(port, '0.0.0.0');
+  logger.log(`${name} - ${version}`);
+  logger.log(`On ${environment} environment`);
+  logger.log(`Enable CORS ${isCorsEnabled}`);
+  logger.log(`Started on port ${port}`);
 }
 bootstrap();
