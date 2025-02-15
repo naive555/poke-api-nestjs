@@ -87,10 +87,16 @@ export class PokemonService {
       }
 
       const pokemon = await this.getPokemon(name);
-
       await this.cacheManager.set(
         `${POKEMON_KEY}:${name}`,
         pokemon,
+        POKEMON_CACHE_DURATION,
+      );
+
+      const abilities = { abilities: pokemon.abilities };
+      await this.cacheManager.set(
+        `${POKEMON_KEY}:${name}:abilities`,
+        abilities,
         POKEMON_CACHE_DURATION,
       );
 
