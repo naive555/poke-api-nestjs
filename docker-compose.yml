@@ -1,8 +1,6 @@
-version: "3.8" # optional since v1.27.0
-
 services:
   redis:
-    image: redis:rc-alpine3.13
+    image: redis:alpine3.21
     restart: always
     ports:
       - "6379:6379"
@@ -10,7 +8,7 @@ services:
       - typeorm-network
 
   mysql:
-    image: mysql/mysql-server:8.0.23-1.1.19
+    image: mysql/mysql-server:8.0.31
     restart: always
     ports:
       - "3306:3306"
@@ -21,9 +19,6 @@ services:
       MYSQL_ROOT_PASSWORD: 123456
       MYSQL_USER: admin
       MYSQL_PASSWORD: 123456
-    volumes:
-      - db-data:/var/lib/mysql/data
-      - config:/etc/mysql/conf.d
     networks:
       - typeorm-network
 
@@ -35,10 +30,6 @@ services:
       - "3001:3001"
     networks:
       - typeorm-network
-
-volumes:
-  db-data:
-  config:
 
 networks:
   typeorm-network:
