@@ -42,7 +42,11 @@ export class UserService {
         Object.assign(findQuery, { username: Like(`%${query.username}%`) });
       }
 
-      return this.userRepository.findBy(findQuery);
+      return this.userRepository.find({
+        where: findQuery,
+        order: { createdAt: -1 },
+        cache: true,
+      });
     } catch (error) {
       this.logger.error({
         message: {
