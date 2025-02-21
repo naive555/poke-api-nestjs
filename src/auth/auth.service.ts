@@ -1,3 +1,4 @@
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   BadRequestException,
   Inject,
@@ -6,15 +7,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { JwtService } from '@nestjs/jwt';
 
-import { IAuthPayload, IAuthResponse } from './auth.interface';
-import { UserService } from '../user/user.service';
-import { Encrypt } from '../utility/encrypt';
-import { USER_SESSION_KEY } from '../utility/common.constant';
+import { CreateUserDto } from '../user/dto/user.dto';
 import { User } from '../user/user.entity';
-import { UserDto } from '../user/dto/user.dto';
+import { UserService } from '../user/user.service';
+import { USER_SESSION_KEY } from '../utility/common.constant';
+import { Encrypt } from '../utility/encrypt';
+import { IAuthPayload, IAuthResponse } from './auth.interface';
 
 @Injectable()
 export class AuthService {
@@ -108,7 +108,7 @@ export class AuthService {
     }
   }
 
-  async register(userData: UserDto): Promise<IAuthResponse> {
+  async register(userData: CreateUserDto): Promise<IAuthResponse> {
     this.logger.log({
       message: {
         function: this.register.name,

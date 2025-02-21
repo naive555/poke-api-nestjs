@@ -1,4 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
 import { IAuthPayload } from './auth.interface';
 
 export const GetAuthPayload = createParamDecorator(

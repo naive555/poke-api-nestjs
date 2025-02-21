@@ -33,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }
 
       return { ...authPayload };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException();
     }
   }

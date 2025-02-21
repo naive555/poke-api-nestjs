@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Not, Repository } from 'typeorm';
 
-import { User } from './user.entity';
-import { UserDto } from './dto/user.dto';
-import { Encrypt } from '../utility/encrypt';
 import { EStatus } from '../utility/common.enum';
+import { Encrypt } from '../utility/encrypt';
+import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
+import { User } from './user.entity';
 
 @Injectable()
 export class UserService {
@@ -25,6 +25,36 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  async find(query: UserQueryDto): Promise<User[]> {
+    this.logger.log({
+      message: {
+        function: this.find.name,
+        data: { ...query },
+      },
+    });
+
+    try {
+      const findQuery = {
+        status: Not(EStatus.DELETED),
+      };
+
+      if (query.username) {
+        Object.assign(findQuery, { username: Like(`%${query.username}%`) });
+      }
+
+      return this.userRepository.findBy(findQuery);
+    } catch (error) {
+      this.logger.error({
+        message: {
+          function: this.find.name,
+          message: error.message,
+          data: { ...query },
+        },
+      });
+      throw new InternalServerErrorException();
+    }
+  }
+
   async getByUsername(username: string): Promise<User> {
     this.logger.log({
       message: {
@@ -34,9 +64,9 @@ export class UserService {
     });
 
     try {
-      return this.userRepository.findOneBy({
-        username,
-        status: EStatus.ENABLED,
+      return this.userRepository.findOne({
+        where: { username, status: EStatus.ENABLED },
+        select: ['id', 'username', 'password'],
       });
     } catch (error) {
       this.logger.error({
@@ -50,7 +80,32 @@ export class UserService {
     }
   }
 
-  async create(userData: UserDto): Promise<User> {
+  async findById(id: number): Promise<User> {
+    this.logger.log({
+      message: {
+        function: this.findById.name,
+        data: { id },
+      },
+    });
+
+    try {
+      return this.userRepository.findOneBy({
+        id,
+        status: Not(EStatus.DELETED),
+      });
+    } catch (error) {
+      this.logger.error({
+        message: {
+          function: this.findById.name,
+          message: error.message,
+          data: { id },
+        },
+      });
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async create(userData: CreateUserDto): Promise<User> {
     this.logger.log({
       message: {
         function: this.create.name,
@@ -61,7 +116,7 @@ export class UserService {
     try {
       const existedUser = await this.userRepository.findOneBy({
         username: userData.username,
-        status: EStatus.ENABLED,
+        status: Not(EStatus.DELETED),
       });
       if (existedUser) {
         throw new BadRequestException('User is already exists');
@@ -83,6 +138,28 @@ export class UserService {
       if (error.status === 400) {
         throw new BadRequestException(error.message);
       }
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async update(id: number, userData: UpdateUserDto): Promise<void> {
+    this.logger.log({
+      message: {
+        function: this.update.name,
+        data: { ...userData },
+      },
+    });
+
+    try {
+      await this.userRepository.update(id, userData);
+    } catch (error) {
+      this.logger.error({
+        message: {
+          function: this.update.name,
+          message: error.message,
+          data: { ...userData },
+        },
+      });
       throw new InternalServerErrorException();
     }
   }

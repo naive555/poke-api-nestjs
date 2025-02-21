@@ -1,4 +1,5 @@
 import { registerAs } from '@nestjs/config';
+
 import { ISqlConfig } from '../utility/common.interface';
 
 export default registerAs<ISqlConfig>('database', () => ({

@@ -7,12 +7,13 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+
 import { AuthService } from './auth.service';
 import { IAuthPayload } from './auth.interface';
 import { GetAuthPayload } from './auth.decorator';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { UserDto } from '../user/dto/user.dto';
+import { CreateUserDto } from '../user/dto/user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,7 +28,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('register')
-  register(@Body() userDto: UserDto) {
+  register(@Body() userDto: CreateUserDto) {
     return this.authService.register(userDto);
   }
 

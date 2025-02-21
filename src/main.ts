@@ -1,13 +1,13 @@
-import { NestFactory } from '@nestjs/core';
+import compression from '@fastify/compress';
+import cors from '@fastify/cors';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { useContainer } from 'class-validator';
+import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import cors from '@fastify/cors';
-import compression from '@fastify/compress';
+import { useContainer } from 'class-validator';
 
 import { AppModule } from './app.module';
 

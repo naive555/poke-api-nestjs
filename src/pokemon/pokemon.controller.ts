@@ -1,7 +1,8 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { PokemonService } from './pokemon.service';
-import { PokemonDto } from './dto/pokemon.dto';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PokemonDto } from './dto/pokemon.dto';
+import { PokemonService } from './pokemon.service';
 
 @Controller('pokemon')
 export class PokemonController {
