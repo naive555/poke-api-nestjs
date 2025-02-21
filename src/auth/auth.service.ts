@@ -80,7 +80,10 @@ export class AuthService {
           sub: user.id,
           username: user.username,
         };
-        accessToken = this.jwtService.sign(payload);
+        accessToken = this.jwtService.sign(
+          payload,
+          this.configService.get('jwt.signOptions'),
+        );
 
         try {
           await this.setTokenCache(user.id, accessToken);

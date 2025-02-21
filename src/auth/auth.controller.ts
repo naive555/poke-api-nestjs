@@ -8,12 +8,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { AuthService } from './auth.service';
-import { IAuthPayload } from './auth.interface';
-import { GetAuthPayload } from './auth.decorator';
-import { LocalAuthGuard } from './guards/local-auth.guard';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CreateUserDto } from '../user/dto/user.dto';
+import { User } from '../user/user.entity';
+import { GetAuthPayload } from './auth.decorator';
+import { IAuthPayload } from './auth.interface';
+import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { LocalAuthGuard } from './guards/local-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -22,8 +23,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  login(@Request() req) {
-    return this.authService.login(req.user);
+  login(@Request() { user }: { user: User }) {
+    return this.authService.login(user);
   }
 
   @HttpCode(HttpStatus.OK)
