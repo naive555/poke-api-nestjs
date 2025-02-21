@@ -117,15 +117,9 @@ export class UserService {
       },
     });
 
-    try {
-      const existedUser = await this.userRepository.findOneBy({
-        username: userData.username,
-        status: Not(EStatus.DELETED),
-      });
-      if (existedUser) {
-        throw new BadRequestException('User is already exists');
-      }
+    await this.validateExistingUser(userData.username);
 
+    try {
       const newUser = this.userRepository.create();
       newUser.username = userData.username;
       newUser.password = await this.encrypt.hashPassword(userData.password);
@@ -141,9 +135,6 @@ export class UserService {
           data: { username: userData.username },
         },
       });
-      if (error.status === 400) {
-        throw new BadRequestException(error.message);
-      }
       throw new InternalServerErrorException();
     }
   }
@@ -155,6 +146,8 @@ export class UserService {
         data: { ...userData },
       },
     });
+
+    await this.validateExistingUser(userData.username, id);
 
     try {
       await this.userRepository.update(id, userData);
@@ -192,6 +185,17 @@ export class UserService {
         },
       });
       throw new InternalServerErrorException();
+    }
+  }
+
+  async validateExistingUser(username: string, id?: number) {
+    const existedUser = await this.userRepository.findOneBy({
+      ...(id && { id: Not(id) }),
+      username,
+      status: Not(EStatus.DELETED),
+    });
+    if (existedUser) {
+      throw new BadRequestException('User is already exists');
     }
   }
 }
