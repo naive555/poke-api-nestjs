@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -27,8 +28,13 @@ export class UserController {
   }
 
   @Get(':id')
-  findById(@Param('id') id: number) {
-    return this.userService.findById(id);
+  async findById(@Param('id') id: number) {
+    const user = await this.userService.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
   @Post()
