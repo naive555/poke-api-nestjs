@@ -59,10 +59,10 @@ export class UserService {
     }
   }
 
-  async getByUsername(username: string): Promise<User> {
+  async findByUsername(username: string): Promise<User> {
     this.logger.log({
       message: {
-        function: this.getByUsername.name,
+        function: this.findByUsername.name,
         data: { username },
       },
     });
@@ -75,7 +75,7 @@ export class UserService {
     } catch (error) {
       this.logger.error({
         message: {
-          function: this.getByUsername.name,
+          function: this.findByUsername.name,
           message: error.message,
           data: { username },
         },

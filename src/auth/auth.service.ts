@@ -42,7 +42,7 @@ export class AuthService {
     }
 
     try {
-      const user = await this.userService.getByUsername(username);
+      const user = await this.userService.findByUsername(username);
       if (!user) return null;
 
       const passwordValidated = await this.validatePassword(
