@@ -130,7 +130,9 @@ export class UserService {
       newUser.username = userData.username;
       newUser.password = await this.encrypt.hashPassword(userData.password);
 
-      return this.userRepository.save(newUser);
+      const user = await this.userRepository.save(newUser);
+      delete user.password;
+      return user;
     } catch (error) {
       this.logger.error({
         message: {
