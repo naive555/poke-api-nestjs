@@ -29,7 +29,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(username: string, password: string) {
+  async validateUser(username: string, password: string): Promise<User> {
     this.logger.log({
       message: {
         function: this.validateUser.name,
@@ -58,6 +58,7 @@ export class AuthService {
         message: {
           function: this.validateUser.name,
           message: error.message,
+          data: { username },
         },
       });
       throw new InternalServerErrorException();
@@ -74,28 +75,18 @@ export class AuthService {
 
     try {
       let accessToken = await this.getTokenCache(user.id);
-
       if (!accessToken) {
         const payload: IAuthPayload = {
           sub: user.id,
           username: user.username,
         };
+
         accessToken = this.jwtService.sign(
           payload,
           this.configService.get('jwt.signOptions'),
         );
 
-        try {
-          await this.setTokenCache(user.id, accessToken);
-        } catch (error) {
-          this.logger.error({
-            message: {
-              function: this.login.name,
-              message: error.message,
-              username: user.username,
-            },
-          });
-        }
+        await this.setTokenCache(user.id, accessToken);
       }
 
       return { accessToken } as IAuthResponse;
@@ -104,7 +95,7 @@ export class AuthService {
         message: {
           function: this.login.name,
           message: error.message,
-          username: user.username,
+          data: { username: user.username },
         },
       });
       throw new InternalServerErrorException();
@@ -131,9 +122,6 @@ export class AuthService {
           data: { username: userData.username },
         },
       });
-      if (error.status === 400) {
-        throw new BadRequestException(error.message);
-      }
       throw new InternalServerErrorException();
     }
   }
@@ -147,7 +135,11 @@ export class AuthService {
       return this.cacheManager.get(`${USER_SESSION_KEY}:${userId}`);
     } catch (error) {
       this.logger.error({
-        message: { function: this.getTokenCache.name, message: error.message },
+        message: {
+          function: this.getTokenCache.name,
+          message: error.message,
+          data: { userId },
+        },
       });
       throw new InternalServerErrorException();
     }
@@ -169,7 +161,11 @@ export class AuthService {
       );
     } catch (error) {
       this.logger.error({
-        message: { function: this.setTokenCache.name, message: error.message },
+        message: {
+          function: this.setTokenCache.name,
+          message: error.message,
+          data: { userId, accessToken },
+        },
       });
       throw new InternalServerErrorException();
     }
@@ -190,6 +186,7 @@ export class AuthService {
         message: {
           function: this.clearTokenCache.name,
           message: error.message,
+          data: { userId: authPayload.sub },
         },
       });
       throw new InternalServerErrorException();

@@ -188,7 +188,7 @@ export class UserService {
     }
   }
 
-  async validateExistingUser(username: string, id?: number) {
+  async validateExistingUser(username: string, id?: number): Promise<void> {
     const existedUser = await this.userRepository.findOneBy({
       ...(id && { id: Not(id) }),
       username,

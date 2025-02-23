@@ -1,11 +1,11 @@
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import { IAuthPayload } from '../auth.interface';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { USER_SESSION_KEY } from '../../utility/common.constant';
+import { IAuthPayload } from '../auth.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -24,15 +24,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(_: Request, authPayload: IAuthPayload): Promise<IAuthPayload> {
     try {
-      const session = await this.cacheManager.get(
+      const accessToken = await this.cacheManager.get<string>(
         `${USER_SESSION_KEY}:${authPayload.sub}`,
       );
-
-      if (!session) {
+      if (!accessToken) {
         throw new UnauthorizedException();
       }
 
-      return { ...authPayload };
+      return authPayload;
     } catch {
       throw new UnauthorizedException();
     }
