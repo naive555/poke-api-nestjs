@@ -17,7 +17,7 @@ async function bootstrap() {
     new FastifyAdapter() as FastifyAdapter,
   );
 
-  app.register(compression);
+  await app.register(compression);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
