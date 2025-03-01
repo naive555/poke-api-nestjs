@@ -87,20 +87,12 @@ export class PokemonService {
       }
 
       const pokemon = await this.getPokemon(name);
-      const abilities = { abilities: pokemon.abilities };
 
-      await Promise.all([
-        this.cacheManager.set(
-          `${POKEMON_KEY}:${name}`,
-          pokemon,
-          POKEMON_CACHE_DURATION,
-        ),
-        this.cacheManager.set(
-          `${POKEMON_KEY}:${name}:abilities`,
-          abilities,
-          POKEMON_CACHE_DURATION,
-        ),
-      ]);
+      await this.cacheManager.set(
+        `${POKEMON_KEY}:${name}`,
+        pokemon,
+        POKEMON_CACHE_DURATION,
+      );
 
       return pokemon;
     } catch (error) {
@@ -127,23 +119,22 @@ export class PokemonService {
     });
 
     try {
-      const abilitiesCache = await this.cacheManager.get<IPokemonAbility>(
-        `${POKEMON_KEY}:${name}:abilities`,
+      const pokemonCache = await this.cacheManager.get<IPokemon>(
+        `${POKEMON_KEY}:${name}`,
       );
-      if (abilitiesCache) {
-        return abilitiesCache;
+      if (pokemonCache) {
+        return { abilities: pokemonCache.abilities };
       }
 
       const pokemon = await this.getPokemon(name);
-      const abilities = { abilities: pokemon.abilities };
 
       await this.cacheManager.set(
-        `${POKEMON_KEY}:${name}:abilities`,
-        abilities,
+        `${POKEMON_KEY}:${name}`,
+        pokemon,
         POKEMON_CACHE_DURATION,
       );
 
-      return abilities;
+      return { abilities: pokemonCache.abilities };
     } catch (error) {
       this.logger.error({
         message: {
