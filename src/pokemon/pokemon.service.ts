@@ -7,18 +7,25 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { AxiosError } from 'axios';
+import * as pLimit from 'p-limit';
 import { catchError, firstValueFrom } from 'rxjs';
+import { Repository } from 'typeorm';
 
 import {
+  BATCH_SIZE,
+  CONCURRENT,
   POKE_API_URL,
   POKEMON_CACHE_DURATION,
   POKEMON_KEY,
 } from '../utility/common.constant';
+import { EStatus } from '../utility/common.enum';
+import { batchGenerator, logMemoryUsage } from '../utility/common.function';
+import { Pokemon } from './pokemon.entity';
 import {
   IPokeApi,
   IPokeApiList,
-  IPokeApiNameAndUrl,
   IPokemon,
   IPokemonAbility,
   IPokemonName,
@@ -31,6 +38,9 @@ export class PokemonService {
   constructor(
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
+    @InjectRepository(Pokemon)
+    private readonly pokemonRepository: Repository<Pokemon>,
+
     private readonly httpService: HttpService,
   ) {}
 
@@ -40,24 +50,10 @@ export class PokemonService {
     });
 
     try {
-      const pokemonsCache = await this.cacheManager.get<string[]>(POKEMON_KEY);
-      if (pokemonsCache) {
-        return {
-          name: pokemonsCache[Math.floor(Math.random() * pokemonsCache.length)],
-        };
-      }
-
       const pokemons = await this.getPokemons();
-      const pokemonNames = pokemons.map((pokemon) => pokemon.name);
-
-      await this.cacheManager.set(
-        POKEMON_KEY,
-        pokemonNames,
-        POKEMON_CACHE_DURATION,
-      );
-
+      logMemoryUsage('getPokemons');
       return {
-        name: pokemonNames[Math.floor(Math.random() * pokemonNames.length)],
+        name: pokemons[Math.floor(Math.random() * pokemons.length)],
       };
     } catch (error) {
       this.logger.error({
@@ -79,22 +75,7 @@ export class PokemonService {
     });
 
     try {
-      const pokemonCache = await this.cacheManager.get<IPokemon>(
-        `${POKEMON_KEY}:${name}`,
-      );
-      if (pokemonCache) {
-        return pokemonCache;
-      }
-
-      const pokemon = await this.getPokemon(name);
-
-      await this.cacheManager.set(
-        `${POKEMON_KEY}:${name}`,
-        pokemon,
-        POKEMON_CACHE_DURATION,
-      );
-
-      return pokemon;
+      return this.getPokemon(name);
     } catch (error) {
       this.logger.error({
         message: {
@@ -119,22 +100,8 @@ export class PokemonService {
     });
 
     try {
-      const pokemonCache = await this.cacheManager.get<IPokemon>(
-        `${POKEMON_KEY}:${name}`,
-      );
-      if (pokemonCache) {
-        return { abilities: pokemonCache.abilities };
-      }
-
       const pokemon = await this.getPokemon(name);
-
-      await this.cacheManager.set(
-        `${POKEMON_KEY}:${name}`,
-        pokemon,
-        POKEMON_CACHE_DURATION,
-      );
-
-      return { abilities: pokemonCache.abilities };
+      return { abilities: pokemon.abilities };
     } catch (error) {
       this.logger.error({
         message: {
@@ -150,7 +117,26 @@ export class PokemonService {
     }
   }
 
-  private async getPokemons(): Promise<IPokeApiNameAndUrl[]> {
+  private async getPokemons(): Promise<string[]> {
+    const pokemonsCache = await this.cacheManager.get<string[]>(POKEMON_KEY);
+    if (pokemonsCache) {
+      return pokemonsCache;
+    }
+
+    const pokemonsDb = await this.pokemonRepository.find({
+      where: {
+        status: EStatus.ENABLED,
+      },
+      select: { name: true },
+    });
+    if (pokemonsDb.length) {
+      return this.cacheManager.set(
+        POKEMON_KEY,
+        pokemonsDb.map((pokemon) => pokemon.name),
+        POKEMON_CACHE_DURATION,
+      );
+    }
+
     const { data } = await firstValueFrom(
       this.httpService
         .get<IPokeApiList>(`${POKE_API_URL}/pokemon?limit=100000&offset=0`)
@@ -167,10 +153,50 @@ export class PokemonService {
         ),
     );
 
-    return data.results;
+    const pokemonNames = await this.cacheManager.set(
+      POKEMON_KEY,
+      data.results.map((pokemon) => pokemon.name),
+      POKEMON_CACHE_DURATION,
+    );
+
+    const limit = pLimit(CONCURRENT);
+    for await (const batch of batchGenerator(pokemonNames, BATCH_SIZE)) {
+      await Promise.all(
+        batch.map((name) => limit(() => this.getPokemon(name))),
+      );
+    }
+
+    return pokemonNames;
   }
 
   private async getPokemon(name: string): Promise<IPokemon> {
+    const pokemonCache = await this.cacheManager.get<IPokemon>(
+      `${POKEMON_KEY}:${name}`,
+    );
+    if (pokemonCache) {
+      return pokemonCache;
+    }
+
+    const pokemonDb = await this.pokemonRepository.findOneBy({
+      name,
+      status: EStatus.ENABLED,
+    });
+    if (pokemonDb) {
+      return this.cacheManager.set(
+        `${POKEMON_KEY}:${name}`,
+        {
+          name: pokemonDb.name,
+          types: JSON.parse(pokemonDb.types),
+          weight: pokemonDb.weight,
+          height: pokemonDb.height,
+          abilities: JSON.parse(pokemonDb.abilities),
+          species: pokemonDb.species,
+          forms: JSON.parse(pokemonDb.forms),
+        },
+        POKEMON_CACHE_DURATION,
+      );
+    }
+
     const { data } = await firstValueFrom(
       this.httpService.get<IPokeApi>(`${POKE_API_URL}/pokemon/${name}`).pipe(
         catchError((error: AxiosError) => {
@@ -188,7 +214,7 @@ export class PokemonService {
       ),
     );
 
-    return {
+    const newPokemon: IPokemon = {
       name: data.name,
       types: data.types?.map((element) => element.type.name) || [],
       weight: data.weight,
@@ -197,5 +223,29 @@ export class PokemonService {
       species: data.species.name,
       forms: data.forms?.map((element) => element.name) || [],
     };
+    await Promise.all([
+      this.pokemonRepository.upsert(
+        {
+          name: newPokemon.name,
+          types: JSON.stringify(newPokemon.types),
+          weight: newPokemon.weight,
+          height: newPokemon.height,
+          abilities: JSON.stringify(newPokemon.abilities),
+          species: newPokemon.species,
+          forms: JSON.stringify(newPokemon.forms),
+        },
+        {
+          conflictPaths: ['name'],
+          upsertType: 'on-duplicate-key-update',
+        },
+      ),
+      this.cacheManager.set(
+        `${POKEMON_KEY}:${name}`,
+        newPokemon,
+        POKEMON_CACHE_DURATION,
+      ),
+    ]);
+
+    return newPokemon;
   }
 }

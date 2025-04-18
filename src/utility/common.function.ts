@@ -10,3 +10,12 @@ export const logMemoryUsage = (context = 'overall') => {
   Logger.log(`[${context}] External: ${megabyte(memory.external)} MB`);
   Logger.log(`[${context}] Array Buffers: ${megabyte(memory.arrayBuffers)} MB`);
 };
+
+export async function* batchGenerator<T>(
+  items: T[],
+  batchSize: number,
+): AsyncGenerator<T[]> {
+  for (let i = 0; i < items.length; i += batchSize) {
+    yield items.slice(i, i + batchSize);
+  }
+}
