@@ -39,13 +39,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
       const user = await this.userService.findById(authPayload.sub);
       if (user) {
-        const extractTokenFromHeader = ExtractJwt.fromAuthHeaderAsBearerToken();
-        const accessToken = extractTokenFromHeader(request);
+        const accessToken = this.extractTokenFromHeader(request);
         const jwtPayload = decode(accessToken, { json: true });
         await this.cacheManager.set(
           `${USER_SESSION_KEY}:${authPayload.sub}`,
           accessToken,
-          jwtPayload.exp * 1000,
+          new Date().getTime() - jwtPayload.exp * 1000,
         );
 
         return authPayload;
@@ -55,5 +54,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     } catch {
       throw new UnauthorizedException();
     }
+  }
+
+  extractTokenFromHeader(request: Request) {
+    const extractToken = ExtractJwt.fromAuthHeaderAsBearerToken();
+    return extractToken(request);
   }
 }
