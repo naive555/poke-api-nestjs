@@ -14,14 +14,12 @@ import { catchError, firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
 
 import {
-  BATCH_SIZE,
   CONCURRENT,
   POKE_API_URL,
   POKEMON_CACHE_DURATION,
   POKEMON_KEY,
 } from '../utility/common.constant';
 import { EStatus } from '../utility/common.enum';
-import { batchGenerator, logMemoryUsage } from '../utility/common.function';
 import { Pokemon } from './pokemon.entity';
 import {
   IPokeApi,
@@ -51,7 +49,6 @@ export class PokemonService {
 
     try {
       const pokemons = await this.getPokemons();
-      logMemoryUsage('getPokemons');
       return {
         name: pokemons[Math.floor(Math.random() * pokemons.length)],
       };
@@ -160,16 +157,18 @@ export class PokemonService {
     );
 
     const limit = pLimit(CONCURRENT);
-    for await (const batch of batchGenerator(pokemonNames, BATCH_SIZE)) {
-      await Promise.all(
-        batch.map((name) => limit(() => this.getPokemon(name))),
-      );
+    const tasks = [];
+    for (const name of pokemonNames) {
+      tasks.push(limit(() => this.getPokemon(name)));
     }
+
+    await Promise.all(tasks);
 
     return pokemonNames;
   }
 
   private async getPokemon(name: string): Promise<IPokemon> {
+    this.logger.log(`getPokemon: ${name}`);
     const pokemonCache = await this.cacheManager.get<IPokemon>(
       `${POKEMON_KEY}:${name}`,
     );
