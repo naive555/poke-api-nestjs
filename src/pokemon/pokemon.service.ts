@@ -157,9 +157,15 @@ export class PokemonService {
     );
 
     const limit = pLimit(CONCURRENT);
-    const tasks = [];
+    const tasks = new Set();
     for (const name of pokemonNames) {
-      tasks.push(limit(() => this.getPokemon(name)));
+      const task = limit(() => this.getPokemon(name));
+      tasks.add(task);
+      task.finally(() => tasks.delete(task));
+
+      if (tasks.size >= CONCURRENT * 2) {
+        await Promise.race(tasks);
+      }
     }
 
     await Promise.all(tasks);
