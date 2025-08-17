@@ -5,16 +5,22 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 
 // config
-import bcrypt from './bcrypt';
+import bcryptConfig from './bcrypt.config';
 import commonConfig from './common.config';
 import databaseConfig from './database.config';
-import jwt from './jwt';
+import jwtConfig from './jwt.config';
 import redisConfig from './redis.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load: [bcrypt, commonConfig, databaseConfig, jwt, redisConfig],
+      load: [
+        bcryptConfig,
+        commonConfig,
+        databaseConfig,
+        jwtConfig,
+        redisConfig,
+      ],
       isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({

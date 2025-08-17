@@ -8,4 +8,8 @@ export const POKEMON_CACHE_DURATION = 1000 * 60 * 10; // 10 minutes
 
 export const BATCH_SIZE = 1000;
 
-export const CONCURRENT = 20;
+export const CONCURRENT = 5;
+
+export const POKEMON_QUEUE_NAME = 'pokemon';
+
+export const POKEMON_JOB_NAME = 'fetch-detail';
