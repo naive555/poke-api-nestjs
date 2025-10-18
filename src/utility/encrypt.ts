@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { compare, genSalt, hash } from 'bcrypt';
+import { compare, genSalt, hash } from 'bcryptjs';
 
 export class Encrypt {
   constructor(private readonly configService: ConfigService) {}
