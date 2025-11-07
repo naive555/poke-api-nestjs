@@ -10,6 +10,7 @@ import commonConfig from './common.config';
 import databaseConfig from './database.config';
 import jwtConfig from './jwt.config';
 import redisConfig from './redis.config';
+import { envPath } from '../utility/common.function';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import redisConfig from './redis.config';
         redisConfig,
       ],
       isGlobal: true,
+      envFilePath: envPath(process.env.NODE_ENV),
     }),
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) =>

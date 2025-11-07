@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { existsSync } from 'fs';
 
 export const logMemoryUsage = (context = 'overall') => {
   const memory = process.memoryUsage();
@@ -19,3 +20,10 @@ export async function* batchGenerator<T>(
     yield items.slice(i, i + batchSize);
   }
 }
+
+export const envPath = (env: string | undefined): string => {
+  if (env === 'docker' && existsSync('.env.docker')) return '.env.docker';
+  else if (existsSync('.env.local')) return '.env.local';
+
+  return '.env';
+};
