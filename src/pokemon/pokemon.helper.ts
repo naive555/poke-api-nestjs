@@ -95,7 +95,7 @@ export class PokemonHelper {
 
   async getPokemon(name: string): Promise<IPokemon> {
     this.logger.log({
-      message: { function: this.getPokemons.name, data: { name } },
+      message: { function: this.getPokemon.name, data: { name } },
     });
 
     const pokemonCache = await this.cacheManager.get<IPokemon>(
