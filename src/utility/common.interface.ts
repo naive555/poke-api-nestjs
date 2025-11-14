@@ -9,13 +9,13 @@ export interface ISqlConfig {
   entities: string[];
   migrationsRun: boolean;
   synchronize: boolean;
-  cache: ICacheConfig;
+  cache?: ICacheConfig;
 }
 
 export interface ICacheConfig {
-  type: 'redis';
+  type: string;
   options: {
     host: string;
-    port: string;
+    port: number;
   };
 }

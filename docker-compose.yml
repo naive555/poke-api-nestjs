@@ -1,36 +1,62 @@
+name: poke-api-nestjs
+
 services:
   redis:
+    container_name: poke_redis
     image: redis:alpine3.21
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
-      - typeorm-network
+      - poke-network
 
   mysql:
-    image: mysql/mysql-server:8.0.31
+    container_name: poke_db
+    image: mysql:8.0.32
     restart: always
     ports:
-      - "3306:3306"
-      - "33060:33060"
-    command: [ "mysqld", "--default-authentication-plugin=mysql_native_password" ]
+      - "${DATABASE_PORT}:${DATABASE_PORT}"
     environment:
-      MYSQL_ROOT_HOST: '%'
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: "${DATABASE_PASSWORD}"
+      MYSQL_DATABASE: "${DATABASE_DATABASE}"
+      MYSQL_USER: "${DATABASE_USER}"
+      MYSQL_PASSWORD: "${DATABASE_PASSWORD}"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
-      - typeorm-network
+      - poke-network
 
-  nest-app:
-    build: .
+  nest-bun-app:
+    container_name: poke_app
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.docker
     ports:
-      - "3001:3001"
+      - "${PORT}:${PORT}"
+    restart: unless-stopped
     networks:
-      - typeorm-network
+      - poke-network
 
 networks:
-  typeorm-network:
+  poke-network:
     driver: bridge
+
+volumes:
+  mysql_data:
