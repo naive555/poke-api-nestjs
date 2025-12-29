@@ -189,12 +189,14 @@ export class UserService {
   }
 
   async validateExistingUser(username: string, id?: number): Promise<void> {
-    const existedUser = await this.userRepository.findOneBy({
-      ...(id && { id: Not(id) }),
-      username,
-      status: Not(EStatus.DELETED),
+    const isUserExists = await this.userRepository.exists({
+      where: {
+        ...(id && { id: Not(id) }),
+        username,
+        status: Not(EStatus.DELETED),
+      },
     });
-    if (existedUser) {
+    if (isUserExists) {
       throw new BadRequestException('User is already exists');
     }
   }

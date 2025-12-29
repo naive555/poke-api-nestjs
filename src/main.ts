@@ -49,4 +49,5 @@ async function bootstrap() {
   logger.log(`Enable CORS ${isCorsEnabled}`);
   logger.log(`Started on port ${port}`);
 }
+
 bootstrap();
