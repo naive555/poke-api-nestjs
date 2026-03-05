@@ -5,33 +5,28 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
 import { EStatus } from '../utility/common.enum';
 
 export const TABLE_USER = 'user';
 
-@Entity()
+@Entity({ name: TABLE_USER })
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @Column({ unique: true })
   username: string;
 
   @Column({ select: false })
   password: string;
 
-  @Column({ default: EStatus.ENABLED })
+  @Column({ type: 'smallint', default: EStatus.ENABLED })
   status: EStatus;
 
-  @CreateDateColumn({
-    name: 'created_at',
-    type: 'timestamp',
-  })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({
-    name: 'updated_at',
-    type: 'timestamp',
-  })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
 }

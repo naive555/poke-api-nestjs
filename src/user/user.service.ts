@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { omit } from 'lodash';
 import { Like, Not, Repository } from 'typeorm';
 
 import { EStatus } from '../utility/common.enum';
@@ -27,33 +28,24 @@ export class UserService {
 
   async find(query: UserQueryDto): Promise<User[]> {
     this.logger.log({
-      message: {
-        function: this.find.name,
-        data: { ...query },
-      },
+      message: { function: this.find.name, data: { ...query } },
     });
 
     try {
-      const findQuery = {
+      const findQuery: Record<string, unknown> = {
         status: Not(EStatus.DELETED),
       };
-
       if (query.username) {
-        Object.assign(findQuery, { username: Like(`%${query.username}%`) });
+        findQuery.username = Like(`%${query.username}%`);
       }
 
-      return this.userRepository.find({
+      return await this.userRepository.find({
         where: findQuery,
-        order: { createdAt: -1 },
-        cache: true,
+        order: { createdAt: 'DESC' },
       });
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.find.name,
-          message: error.message,
-          data: { ...query },
-        },
+        message: { function: this.find.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
@@ -61,49 +53,35 @@ export class UserService {
 
   async findByUsername(username: string): Promise<User> {
     this.logger.log({
-      message: {
-        function: this.findByUsername.name,
-        data: { username },
-      },
+      message: { function: this.findByUsername.name, data: { username } },
     });
 
     try {
-      return this.userRepository.findOne({
+      return await this.userRepository.findOne({
         where: { username, status: EStatus.ENABLED },
-        select: ['id', 'username', 'password'],
+        select: { id: true, username: true, password: true },
       });
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.findByUsername.name,
-          message: error.message,
-          data: { username },
-        },
+        message: { function: this.findByUsername.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
   }
 
-  async findById(id: number): Promise<User> {
+  async findById(id: string): Promise<User> {
     this.logger.log({
-      message: {
-        function: this.findById.name,
-        data: { id },
-      },
+      message: { function: this.findById.name, data: { id } },
     });
 
     try {
-      return this.userRepository.findOneBy({
+      return await this.userRepository.findOneBy({
         id,
         status: Not(EStatus.DELETED),
       });
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.findById.name,
-          message: error.message,
-          data: { id },
-        },
+        message: { function: this.findById.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
@@ -120,55 +98,47 @@ export class UserService {
     await this.validateExistingUser(userData.username);
 
     try {
-      const newUser = this.userRepository.create();
-      newUser.username = userData.username;
-      newUser.password = await this.encrypt.hashPassword(userData.password);
+      const newUser = this.userRepository.create({
+        username: userData.username,
+        password: await this.encrypt.hashPassword(userData.password),
+      });
 
       const user = await this.userRepository.save(newUser);
-      delete user.password;
-      return user;
+      return omit(user, ['password']) as User;
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.create.name,
-          message: error.message,
-          data: { username: userData.username },
-        },
+        message: { function: this.create.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
   }
 
-  async update(id: number, userData: UpdateUserDto): Promise<void> {
+  async update(id: string, userData: UpdateUserDto): Promise<void> {
     this.logger.log({
-      message: {
-        function: this.update.name,
-        data: { ...userData },
-      },
+      message: { function: this.update.name, data: { ...userData } },
     });
 
     await this.validateExistingUser(userData.username, id);
 
     try {
-      await this.userRepository.update(id, userData);
+      const updateData = { ...userData };
+      if (userData.password) {
+        updateData.password = await this.encrypt.hashPassword(
+          userData.password,
+        );
+      }
+      await this.userRepository.update(id, updateData);
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.update.name,
-          message: error.message,
-          data: { ...userData },
-        },
+        message: { function: this.update.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
   }
 
-  async delete(userId: number): Promise<void> {
+  async delete(userId: string): Promise<void> {
     this.logger.log({
-      message: {
-        function: this.delete.name,
-        data: { userId },
-      },
+      message: { function: this.delete.name, data: { userId } },
     });
 
     try {
@@ -178,17 +148,13 @@ export class UserService {
       );
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.delete.name,
-          message: error.message,
-          data: { userId },
-        },
+        message: { function: this.delete.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
   }
 
-  async validateExistingUser(username: string, id?: number): Promise<void> {
+  async validateExistingUser(username: string, id?: string): Promise<void> {
     const isUserExists = await this.userRepository.exists({
       where: {
         ...(id && { id: Not(id) }),

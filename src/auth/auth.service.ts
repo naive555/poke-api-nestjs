@@ -126,7 +126,7 @@ export class AuthService {
     }
   }
 
-  async getTokenCache(userId: number): Promise<string> {
+  async getTokenCache(userId: string): Promise<string> {
     try {
       this.logger.log({
         message: { function: this.getTokenCache.name, data: { userId } },
@@ -145,7 +145,7 @@ export class AuthService {
     }
   }
 
-  async setTokenCache(userId: number, accessToken: string): Promise<void> {
+  async setTokenCache(userId: string, accessToken: string): Promise<void> {
     this.logger.log({
       message: {
         function: this.setTokenCache.name,

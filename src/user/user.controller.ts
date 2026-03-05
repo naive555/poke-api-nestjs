@@ -28,7 +28,7 @@ export class UserController {
   }
 
   @Get(':id')
-  async findById(@Param('id') id: number) {
+  async findById(@Param('id') id: string) {
     const user = await this.userService.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -43,13 +43,13 @@ export class UserController {
   }
 
   @Put(':id')
-  update(@Param('id') id: number, @Body() body: UpdateUserDto) {
+  update(@Param('id') id: string, @Body() body: UpdateUserDto) {
     return this.userService.update(id, body);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  delete(@Param('id') id: number) {
+  delete(@Param('id') id: string) {
     return this.userService.delete(id);
   }
 }

@@ -13,11 +13,15 @@ export class CreateUserDto {
 export class UpdateUserDto {
   @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
 }
 
 export class UserQueryDto {
   @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
 }
