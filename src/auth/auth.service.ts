@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { omit } from 'lodash';
 
 import { CreateUserDto } from '../user/dto/user.dto';
 import { User } from '../user/user.entity';
@@ -22,8 +23,7 @@ export class AuthService {
   private readonly encrypt = new Encrypt(this.configService);
 
   constructor(
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
@@ -31,10 +31,7 @@ export class AuthService {
 
   async validateUser(username: string, password: string): Promise<User> {
     this.logger.log({
-      message: {
-        function: this.validateUser.name,
-        data: { username },
-      },
+      message: { function: this.validateUser.name, data: { username } },
     });
 
     if (!username || !password) {
@@ -45,21 +42,16 @@ export class AuthService {
       const user = await this.userService.findByUsername(username);
       if (!user) return null;
 
-      const passwordValidated = await this.validatePassword(
+      const isPasswordValid = await this.validatePassword(
         password,
         user.password,
       );
-      if (!passwordValidated) return null;
+      if (!isPasswordValid) return null;
 
-      delete user.password;
-      return user;
+      return omit(user, ['password']) as User;
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.validateUser.name,
-          message: error.message,
-          data: { username },
-        },
+        message: { function: this.validateUser.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
@@ -67,36 +59,24 @@ export class AuthService {
 
   async login(user: User): Promise<IAuthResponse> {
     this.logger.log({
-      message: {
-        function: this.login.name,
-        data: { username: user.username },
-      },
+      message: { function: this.login.name, data: { username: user.username } },
     });
 
     try {
       let accessToken = await this.getTokenCache(user.id);
       if (!accessToken) {
-        const payload: IAuthPayload = {
-          sub: user.id,
-          username: user.username,
-        };
-
+        const payload: IAuthPayload = { sub: user.id, username: user.username };
         accessToken = this.jwtService.sign(
           payload,
           this.configService.get('jwt.signOptions'),
         );
-
         await this.setTokenCache(user.id, accessToken);
       }
 
       return { accessToken } as IAuthResponse;
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.login.name,
-          message: error.message,
-          data: { username: user.username },
-        },
+        message: { function: this.login.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
@@ -110,36 +90,21 @@ export class AuthService {
       },
     });
 
-    try {
-      const user = await this.userService.create(userData);
-
-      return this.login(user);
-    } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.register.name,
-          message: error.message,
-          data: { username: userData.username },
-        },
-      });
-      throw new InternalServerErrorException();
-    }
+    // ไม่ต้อง try/catch — errors จาก userService และ login จะ propagate ขึ้นมาเองถูก type แล้ว
+    const user = await this.userService.create(userData);
+    return this.login(user);
   }
 
   async getTokenCache(userId: string): Promise<string> {
-    try {
-      this.logger.log({
-        message: { function: this.getTokenCache.name, data: { userId } },
-      });
+    this.logger.log({
+      message: { function: this.getTokenCache.name, data: { userId } },
+    });
 
-      return this.cacheManager.get(`${USER_SESSION_KEY}:${userId}`);
+    try {
+      return await this.cacheManager.get(`${USER_SESSION_KEY}:${userId}`);
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.getTokenCache.name,
-          message: error.message,
-          data: { userId },
-        },
+        message: { function: this.getTokenCache.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
@@ -147,10 +112,7 @@ export class AuthService {
 
   async setTokenCache(userId: string, accessToken: string): Promise<void> {
     this.logger.log({
-      message: {
-        function: this.setTokenCache.name,
-        data: { userId, accessToken },
-      },
+      message: { function: this.setTokenCache.name, data: { userId } },
     });
 
     try {
@@ -161,11 +123,7 @@ export class AuthService {
       );
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.setTokenCache.name,
-          message: error.message,
-          data: { userId, accessToken },
-        },
+        message: { function: this.setTokenCache.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
@@ -183,11 +141,7 @@ export class AuthService {
       await this.cacheManager.del(`${USER_SESSION_KEY}:${authPayload.sub}`);
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.clearTokenCache.name,
-          message: error.message,
-          data: { userId: authPayload.sub },
-        },
+        message: { function: this.clearTokenCache.name, error: error.message },
       });
       throw new InternalServerErrorException();
     }
