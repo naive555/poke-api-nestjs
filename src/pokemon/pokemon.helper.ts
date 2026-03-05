@@ -7,10 +7,12 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AxiosError } from 'axios';
 import { Queue } from 'bull';
+import { chunk } from 'lodash';
 import { catchError, firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
 
@@ -26,8 +28,12 @@ import { Pokemon } from './pokemon.entity';
 import { IPokeApi, IPokeApiList, IPokemon } from './pokemon.interface';
 
 @Injectable()
-export class PokemonHelper {
+export class PokemonHelper implements OnModuleInit {
   private readonly logger = new Logger(this.constructor.name);
+
+  async onModuleInit() {
+    await this.getPokemons();
+  }
 
   constructor(
     private readonly httpService: HttpService,
@@ -38,32 +44,20 @@ export class PokemonHelper {
     private readonly pokemonRepository: Repository<Pokemon>,
     @InjectQueue(POKEMON_QUEUE_NAME)
     private readonly pokemonQueue: Queue,
-  ) {
-    this.getPokemons();
-  }
+  ) {}
 
   async getPokemons(): Promise<string[]> {
-    this.logger.log({
-      message: { function: this.getPokemons.name },
-    });
-
     const pokemonsCache = await this.cacheManager.get<string[]>(POKEMON_KEY);
-    if (pokemonsCache) {
-      return pokemonsCache;
-    }
+    if (pokemonsCache) return pokemonsCache;
 
     const pokemonsDb = await this.pokemonRepository.find({
-      where: {
-        status: EStatus.ENABLED,
-      },
+      where: { status: EStatus.ENABLED },
       select: { name: true },
     });
     if (pokemonsDb.length) {
-      return this.cacheManager.set(
-        POKEMON_KEY,
-        pokemonsDb.map((pokemon) => pokemon.name),
-        POKEMON_CACHE_DURATION,
-      );
+      const names = pokemonsDb.map((p) => p.name);
+      await this.cacheManager.set(POKEMON_KEY, names, POKEMON_CACHE_DURATION);
+      return names;
     }
 
     const { data } = await firstValueFrom(
@@ -82,47 +76,48 @@ export class PokemonHelper {
         ),
     );
 
-    const pokemonNames = await this.cacheManager.set(
+    const pokemonNames = data.results.map((p) => p.name);
+    await this.cacheManager.set(
       POKEMON_KEY,
-      data.results.map((pokemon) => pokemon.name),
+      pokemonNames,
       POKEMON_CACHE_DURATION,
     );
 
-    await this.pokemonQueue.add(POKEMON_JOB_NAME, { pokemonNames });
+    const CHUNK_SIZE = 100;
+    const chunks = chunk(pokemonNames, CHUNK_SIZE);
+    await Promise.all(
+      chunks.map((names) => this.pokemonQueue.add(POKEMON_JOB_NAME, { names })),
+    );
 
     return pokemonNames;
   }
 
   async getPokemon(name: string): Promise<IPokemon> {
-    this.logger.log({
-      message: { function: this.getPokemon.name, data: { name } },
-    });
-
     const pokemonCache = await this.cacheManager.get<IPokemon>(
       `${POKEMON_KEY}:${name}`,
     );
-    if (pokemonCache) {
-      return pokemonCache;
-    }
+    if (pokemonCache) return pokemonCache;
 
     const pokemonDb = await this.pokemonRepository.findOneBy({
       name,
       status: EStatus.ENABLED,
     });
     if (pokemonDb) {
-      return this.cacheManager.set(
+      const pokemonData: IPokemon = {
+        name: pokemonDb.name,
+        types: pokemonDb.types,
+        weight: pokemonDb.weight,
+        height: pokemonDb.height,
+        abilities: pokemonDb.abilities,
+        species: pokemonDb.species,
+        forms: pokemonDb.forms,
+      };
+      await this.cacheManager.set(
         `${POKEMON_KEY}:${name}`,
-        {
-          name: pokemonDb.name,
-          types: JSON.parse(pokemonDb.types),
-          weight: pokemonDb.weight,
-          height: pokemonDb.height,
-          abilities: JSON.parse(pokemonDb.abilities),
-          species: pokemonDb.species,
-          forms: JSON.parse(pokemonDb.forms),
-        },
+        pokemonData,
         POKEMON_CACHE_DURATION,
       );
+      return pokemonData;
     }
 
     const { data } = await firstValueFrom(
@@ -134,9 +129,8 @@ export class PokemonHelper {
               error: error.response.data,
             },
           });
-          if (error.response.status === 404) {
+          if (error.response.status === 404)
             throw new NotFoundException('Pokemon not found');
-          }
           throw new InternalServerErrorException(error.response.data);
         }),
       ),
@@ -144,28 +138,18 @@ export class PokemonHelper {
 
     const newPokemon: IPokemon = {
       name: data.name,
-      types: data.types?.map((element) => element.type.name) || [],
+      types: data.types?.map((e) => e.type.name) || [],
       weight: data.weight,
       height: data.height,
-      abilities: data.abilities?.map((element) => element.ability.name) || [],
+      abilities: data.abilities?.map((e) => e.ability.name) || [],
       species: data.species.name,
-      forms: data.forms?.map((element) => element.name) || [],
+      forms: data.forms?.map((e) => e.name) || [],
     };
+
     await Promise.all([
       this.pokemonRepository.upsert(
-        {
-          name: newPokemon.name,
-          types: JSON.stringify(newPokemon.types),
-          weight: newPokemon.weight,
-          height: newPokemon.height,
-          abilities: JSON.stringify(newPokemon.abilities),
-          species: newPokemon.species,
-          forms: JSON.stringify(newPokemon.forms),
-        },
-        {
-          conflictPaths: ['name'],
-          upsertType: 'on-duplicate-key-update',
-        },
+        { ...newPokemon },
+        { conflictPaths: ['name'] },
       ),
       this.cacheManager.set(
         `${POKEMON_KEY}:${name}`,

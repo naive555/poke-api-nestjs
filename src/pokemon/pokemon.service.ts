@@ -1,12 +1,7 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
-import { IPokemon, IPokemonAbility, IPokemonName } from './pokemon.interface';
 import { PokemonHelper } from './pokemon.helper';
+import { IPokemon, IPokemonAbility, IPokemonName } from './pokemon.interface';
 
 @Injectable()
 export class PokemonService {
@@ -15,9 +10,7 @@ export class PokemonService {
   constructor(private readonly pokemonHelper: PokemonHelper) {}
 
   async random(): Promise<IPokemonName> {
-    this.logger.log({
-      message: { function: this.random.name },
-    });
+    this.logger.log({ message: { function: this.random.name } });
 
     try {
       const pokemons = await this.pokemonHelper.getPokemons();
@@ -26,46 +19,34 @@ export class PokemonService {
       };
     } catch (error) {
       this.logger.error({
-        message: {
-          function: this.random.name,
-          message: error.message,
-        },
+        message: { function: this.random.name, error: error.message },
       });
-      throw new InternalServerErrorException(error.message);
+      throw error;
     }
   }
 
   async findByName(name: string): Promise<IPokemon> {
     this.logger.log({
-      message: {
-        function: this.findByName.name,
-        data: { name },
-      },
+      message: { function: this.findByName.name, data: { name } },
     });
 
     try {
-      return this.pokemonHelper.getPokemon(name);
+      return await this.pokemonHelper.getPokemon(name);
     } catch (error) {
       this.logger.error({
         message: {
           function: this.findByName.name,
-          message: error.message,
+          error: error.message,
           data: { name },
         },
       });
-      if (error.status === 404) {
-        throw new NotFoundException(error.message);
-      }
-      throw new InternalServerErrorException(error.message);
+      throw error;
     }
   }
 
   async findAbilitiesByName(name: string): Promise<IPokemonAbility> {
     this.logger.log({
-      message: {
-        function: this.findAbilitiesByName.name,
-        data: { pokemonName: name },
-      },
+      message: { function: this.findAbilitiesByName.name, data: { name } },
     });
 
     try {
@@ -75,14 +56,11 @@ export class PokemonService {
       this.logger.error({
         message: {
           function: this.findAbilitiesByName.name,
-          message: error.message,
+          error: error.message,
           data: { name },
         },
       });
-      if (error.status === 404) {
-        throw new NotFoundException(error.message);
-      }
-      throw new InternalServerErrorException(error.message);
+      throw error;
     }
   }
 }
