@@ -1,4 +1,4 @@
-name: poke-api-nestjs
+name: poke-api
 
 services:
   redis:
@@ -35,7 +35,7 @@ services:
     networks:
       - poke-network
 
-  nest-bun-app:
+  app:
     container_name: poke_app
     build:
       context: .
