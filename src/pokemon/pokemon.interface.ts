@@ -18,24 +18,24 @@ export interface IPokeApiList {
   results: IPokeApiNameAndUrl[];
 }
 
-export interface IPokeAbility {
+export interface IPokeApiAbility {
   ability: IPokeApiNameAndUrl;
   is_hidden: boolean;
   slot: number;
 }
 
-export interface IPokeTypes {
+export interface IPokeApiType {
   slot: number;
   type: IPokeApiNameAndUrl;
 }
 
 export interface IPokeApi {
-  abilities: IPokeAbility[] | null;
+  abilities: IPokeApiAbility[] | null;
   forms?: IPokeApiNameAndUrl[] | null;
   height: number;
   name: string;
   species: IPokeApiNameAndUrl;
-  types?: IPokeTypes[] | null;
+  types?: IPokeApiType[] | null;
   weight: number;
 }
 

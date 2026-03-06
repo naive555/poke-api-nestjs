@@ -1,3 +1,4 @@
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import {
   Column,
   CreateDateColumn,
@@ -5,33 +6,34 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
 import { EStatus } from '../utility/common.enum';
 
 export const TABLE_USER = 'user';
 
-@Entity()
+@Entity({ name: TABLE_USER })
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @ApiProperty({ example: 'uuid-1234' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @ApiProperty({ example: 'testuser' })
+  @Column({ unique: true })
   username: string;
 
+  @ApiHideProperty()
   @Column({ select: false })
   password: string;
 
-  @Column({ default: EStatus.ENABLED })
+  @ApiProperty({ enum: EStatus, example: EStatus.ENABLED })
+  @Column({ type: 'smallint', default: EStatus.ENABLED })
   status: EStatus;
 
-  @CreateDateColumn({
-    name: 'created_at',
-    type: 'timestamp',
-  })
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({
-    name: 'updated_at',
-    type: 'timestamp',
-  })
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
 }

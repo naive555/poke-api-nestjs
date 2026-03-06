@@ -3,8 +3,13 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { IAuthPayload } from './auth.interface';
 
 export const GetAuthPayload = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext): IAuthPayload => {
+  (
+    data: keyof IAuthPayload | undefined,
+    ctx: ExecutionContext,
+  ): IAuthPayload | IAuthPayload[keyof IAuthPayload] => {
     const request = ctx.switchToHttp().getRequest();
-    return request.user;
+    const user = request.user as IAuthPayload;
+
+    return data ? user[data] : user;
   },
 );

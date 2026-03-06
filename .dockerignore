@@ -2,7 +2,6 @@
 # 🔧 Node & Bun dependencies
 # ───────────────────────────────
 node_modules
-bun.lockb
 npm-debug.log
 yarn-error.log
 

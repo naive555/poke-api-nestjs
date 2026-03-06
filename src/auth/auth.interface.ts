@@ -3,6 +3,6 @@ export interface IAuthResponse {
 }
 
 export interface IAuthPayload {
-  sub: number;
+  sub: string;
   username: string;
 }
