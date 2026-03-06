@@ -90,7 +90,6 @@ export class AuthService {
       },
     });
 
-    // ไม่ต้อง try/catch — errors จาก userService และ login จะ propagate ขึ้นมาเองถูก type แล้ว
     const user = await this.userService.create(userData);
     return this.login(user);
   }
