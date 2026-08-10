@@ -4,13 +4,19 @@ import { resolve } from 'path';
 
 export const logMemoryUsage = (context = 'overall') => {
   const memory = process.memoryUsage();
-  const megabyte = (byte: number) => (byte / 1024 / 1024).toFixed(2);
+  const megabyte = (byte: number) => +(byte / 1024 / 1024).toFixed(2);
 
-  Logger.log(`[${context}] RSS: ${megabyte(memory.rss)} MB`);
-  Logger.log(`[${context}] Heap Total: ${megabyte(memory.heapTotal)} MB`);
-  Logger.log(`[${context}] Heap Used: ${megabyte(memory.heapUsed)} MB`);
-  Logger.log(`[${context}] External: ${megabyte(memory.external)} MB`);
-  Logger.log(`[${context}] Array Buffers: ${megabyte(memory.arrayBuffers)} MB`);
+  Logger.debug(
+    {
+      rss: megabyte(memory.rss),
+      heapTotal: megabyte(memory.heapTotal),
+      heapUsed: megabyte(memory.heapUsed),
+      external: megabyte(memory.external),
+      arrayBuffers: megabyte(memory.arrayBuffers),
+    },
+    `Memory usage (MB)`,
+    context,
+  );
 };
 
 export async function* batchGenerator<T>(
@@ -36,15 +42,4 @@ export const getEnvFilePath = (env?: string): string => {
   }
 
   return defaultEnv;
-};
-
-export const mapErrorToMessage = (error: unknown): string => {
-  let errorMessage = 'An unexpected error occurred';
-  if (error instanceof Error) {
-    errorMessage = error.message;
-  } else {
-    errorMessage = String(error);
-  }
-
-  return errorMessage;
 };

@@ -4,12 +4,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { BullModule } from '@nestjs/bull';
+import { LoggerModule } from 'nestjs-pino';
 
 // config
 import bcryptConfig from './bcrypt.config';
 import commonConfig from './common.config';
 import databaseConfig from './database.config';
 import jwtConfig from './jwt.config';
+import loggerConfig, { loggerModuleFactory } from './logger.config';
 import redisConfig from './redis.config';
 import { getEnvFilePath } from '../utility/common.function';
 
@@ -21,10 +23,15 @@ import { getEnvFilePath } from '../utility/common.function';
         commonConfig,
         databaseConfig,
         jwtConfig,
+        loggerConfig,
         redisConfig,
       ],
       isGlobal: true,
       envFilePath: getEnvFilePath(process.env.NODE_ENV),
+    }),
+    LoggerModule.forRootAsync({
+      useFactory: loggerModuleFactory,
+      inject: [ConfigService],
     }),
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) =>

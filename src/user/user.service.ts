@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,11 +12,9 @@ import { EStatus } from '../utility/common.enum';
 import { Encrypt } from '../utility/encrypt';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
 import { User } from './user.entity';
-import { mapErrorToMessage } from '../utility/common.function';
 
 @Injectable()
 export class UserService {
-  private readonly logger = new Logger(this.constructor.name);
   private readonly encrypt = new Encrypt(this.configService);
 
   constructor(
@@ -28,10 +25,6 @@ export class UserService {
   ) {}
 
   async find(query: UserQueryDto): Promise<User[]> {
-    this.logger.log({
-      message: { function: this.find.name, data: { ...query } },
-    });
-
     try {
       const findQuery: Record<string, unknown> = {
         status: Not(EStatus.DELETED),
@@ -45,68 +38,33 @@ export class UserService {
         order: { createdAt: 'DESC' },
       });
     } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.find.name,
-          error: mapErrorToMessage(error),
-          data: { ...query },
-        },
-      });
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(undefined, { cause: error });
     }
   }
 
   async findByUsername(username: string): Promise<User> {
-    this.logger.log({
-      message: { function: this.findByUsername.name, data: { username } },
-    });
-
     try {
       return await this.userRepository.findOne({
         where: { username, status: EStatus.ENABLED },
         select: { id: true, username: true, password: true },
       });
     } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.findByUsername.name,
-          error: mapErrorToMessage(error),
-        },
-      });
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(undefined, { cause: error });
     }
   }
 
   async findById(id: string): Promise<User> {
-    this.logger.log({
-      message: { function: this.findById.name, data: { id } },
-    });
-
     try {
       return await this.userRepository.findOneBy({
         id,
         status: Not(EStatus.DELETED),
       });
     } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.findById.name,
-          error: mapErrorToMessage(error),
-          data: { id },
-        },
-      });
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(undefined, { cause: error });
     }
   }
 
   async create(userData: CreateUserDto): Promise<User> {
-    this.logger.log({
-      message: {
-        function: this.create.name,
-        data: { username: userData.username },
-      },
-    });
-
     await this.validateExistingUser(userData.username);
 
     try {
@@ -118,22 +76,11 @@ export class UserService {
       const user = await this.userRepository.save(newUser);
       return omit(user, ['password']) as User;
     } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.create.name,
-          error: mapErrorToMessage(error),
-          data: { username: userData.username },
-        },
-      });
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(undefined, { cause: error });
     }
   }
 
   async update(id: string, userData: UpdateUserDto): Promise<void> {
-    this.logger.log({
-      message: { function: this.update.name, data: { ...userData } },
-    });
-
     await this.validateExistingUser(userData.username, id);
 
     try {
@@ -145,36 +92,18 @@ export class UserService {
       }
       await this.userRepository.update(id, updateData);
     } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.update.name,
-          error: mapErrorToMessage(error),
-          data: { ...userData },
-        },
-      });
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(undefined, { cause: error });
     }
   }
 
   async delete(userId: string): Promise<void> {
-    this.logger.log({
-      message: { function: this.delete.name, data: { userId } },
-    });
-
     try {
       await this.userRepository.update(
         { id: userId },
         { status: EStatus.DELETED },
       );
     } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.delete.name,
-          error: mapErrorToMessage(error),
-          data: { userId },
-        },
-      });
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(undefined, { cause: error });
     }
   }
 
