@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectQueue } from '@nestjs/bull';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
+  HttpStatus,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -65,13 +66,11 @@ export class PokemonHelper implements OnModuleInit {
         .get<IPokeApiList>(`${POKE_API_URL}/pokemon?limit=100000&offset=0`)
         .pipe(
           catchError((error: AxiosError) => {
-            this.logger.error({
-              message: {
-                function: this.getPokemons.name,
-                error: error.response.data,
-              },
-            });
-            throw new InternalServerErrorException(error.response.data);
+            this.logger.warn(
+              { status: error.response?.status, reason: error.message },
+              'PokeAPI list request failed',
+            );
+            throw new InternalServerErrorException(undefined, { cause: error });
           }),
         ),
     );
@@ -123,15 +122,15 @@ export class PokemonHelper implements OnModuleInit {
     const { data } = await firstValueFrom(
       this.httpService.get<IPokeApi>(`${POKE_API_URL}/pokemon/${name}`).pipe(
         catchError((error: AxiosError) => {
-          this.logger.error({
-            message: {
-              function: this.getPokemon.name,
-              error: error.response.data,
-            },
-          });
-          if (error.response.status === 404)
+          if (error.response?.status === HttpStatus.NOT_FOUND) {
             throw new NotFoundException('Pokemon not found');
-          throw new InternalServerErrorException(error.response.data);
+          }
+
+          this.logger.warn(
+            { name, status: error.response?.status, reason: error.message },
+            'PokeAPI detail request failed',
+          );
+          throw new InternalServerErrorException(undefined, { cause: error });
         }),
       ),
     );

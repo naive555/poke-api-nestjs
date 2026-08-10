@@ -5,7 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AppConfigModule } from './config/app.config.module';
-import { LoggingInterceptor } from './middleware/loggin.interceptor';
+import { LoggingInterceptor } from './middleware/logging.interceptor';
 import { PokemonModule } from './pokemon/pokemon.module';
 import { UserModule } from './user/user.module';
 

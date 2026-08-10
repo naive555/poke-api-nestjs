@@ -20,22 +20,20 @@ export class PokemonProcessor {
 
   @Process(POKEMON_JOB_NAME)
   async getPokemonJob(job: Job<PokemonJobData>): Promise<void> {
-    this.logger.log({
-      message: { function: this.getPokemonJob.name, data: job.data },
-    });
+    const { names } = job.data;
 
     try {
-      const { names } = job.data;
       for (const name of names) {
         await this.pokemonHelper.getPokemon(name);
       }
+
+      this.logger.debug(
+        { jobId: job.id, count: names.length },
+        'Job completed',
+      );
     } catch (error) {
-      this.logger.error({
-        message: {
-          function: this.getPokemonJob.name,
-          error: error.message,
-        },
-      });
+      // Queue jobs run outside any request, so failures have to be reported here.
+      this.logger.error({ err: error, jobId: job.id }, 'Job failed');
       throw error;
     }
   }

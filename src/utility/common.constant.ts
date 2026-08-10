@@ -1,5 +1,9 @@
 export const USER_SESSION_KEY = 'auth-userId';
 
+export const REQUEST_ID_HEADER = 'x-request-id';
+
+export const SLOW_REQUEST_THRESHOLD_MS = 1000;
+
 export const POKE_API_URL = 'https://pokeapi.co/api/v2';
 
 export const POKEMON_KEY = 'pokemons';

@@ -34,6 +34,7 @@ Primary use case:
 - **Queue**: BullMQ + Redis
 - **Database**: TypeORM (configurable)
 - **Cache**: Cache Manager
+- **Logging**: Pino (`nestjs-pino`)
 - **Containerization**: Docker (K8s‑ready)
 
 ---
@@ -81,6 +82,30 @@ bun run start:prod
 ```
 
 Fastify will be used automatically as the HTTP adapter.
+
+---
+
+## Logging
+
+Logs are written by **Pino** through `nestjs-pino`, which also replaces the Nest
+logger, so framework and application lines share one JSON stream.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `LOG_LEVEL` | `info` in production, `silent` in test, `debug` otherwise | Lowest level written |
+| `LOG_PRETTY` | on outside production | Human‑readable output via `pino-pretty` |
+
+Each request produces **one** line, written when the response ends and carrying
+the route, status, duration, `handler`, `userId` and the request id. Failures
+with a 5xx status add the error, its stack and its `cause` chain to that same
+line, so nothing is logged twice.
+
+Every request gets an id: an inbound `x-request-id` is reused, otherwise a UUID
+is generated. It tags every line produced while handling the request and is
+returned in the `x-request-id` response header.
+
+Authorization and cookie headers, and any `password` or `accessToken` field, are
+replaced with `[REDACTED]`.
 
 ---
 
