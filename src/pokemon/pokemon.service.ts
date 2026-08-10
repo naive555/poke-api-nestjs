@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { PokemonHelper } from './pokemon.helper';
 import { IPokemon, IPokemonAbility, IPokemonName } from './pokemon.interface';
+import { mapErrorToMessage } from '../utility/common.function';
 
 @Injectable()
 export class PokemonService {
@@ -19,7 +20,10 @@ export class PokemonService {
       };
     } catch (error) {
       this.logger.error({
-        message: { function: this.random.name, error: error.message },
+        message: {
+          function: this.random.name,
+          error: mapErrorToMessage(error),
+        },
       });
       throw error;
     }
@@ -36,7 +40,7 @@ export class PokemonService {
       this.logger.error({
         message: {
           function: this.findByName.name,
-          error: error.message,
+          error: mapErrorToMessage(error),
           data: { name },
         },
       });
@@ -56,7 +60,7 @@ export class PokemonService {
       this.logger.error({
         message: {
           function: this.findAbilitiesByName.name,
-          error: error.message,
+          error: mapErrorToMessage(error),
           data: { name },
         },
       });

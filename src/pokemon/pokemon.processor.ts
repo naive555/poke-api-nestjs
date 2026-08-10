@@ -7,6 +7,7 @@ import {
   POKEMON_QUEUE_NAME,
 } from '../utility/common.constant';
 import { PokemonHelper } from './pokemon.helper';
+import { mapErrorToMessage } from '../utility/common.function';
 
 type PokemonJobData = {
   names: string[];
@@ -33,7 +34,7 @@ export class PokemonProcessor {
       this.logger.error({
         message: {
           function: this.getPokemonJob.name,
-          error: error.message,
+          error: mapErrorToMessage(error),
         },
       });
       throw error;

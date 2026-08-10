@@ -13,6 +13,7 @@ import { EStatus } from '../utility/common.enum';
 import { Encrypt } from '../utility/encrypt';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
 import { User } from './user.entity';
+import { mapErrorToMessage } from '../utility/common.function';
 
 @Injectable()
 export class UserService {
@@ -45,7 +46,11 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error({
-        message: { function: this.find.name, error: error.message },
+        message: {
+          function: this.find.name,
+          error: mapErrorToMessage(error),
+          data: { ...query },
+        },
       });
       throw new InternalServerErrorException();
     }
@@ -63,7 +68,10 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error({
-        message: { function: this.findByUsername.name, error: error.message },
+        message: {
+          function: this.findByUsername.name,
+          error: mapErrorToMessage(error),
+        },
       });
       throw new InternalServerErrorException();
     }
@@ -81,7 +89,11 @@ export class UserService {
       });
     } catch (error) {
       this.logger.error({
-        message: { function: this.findById.name, error: error.message },
+        message: {
+          function: this.findById.name,
+          error: mapErrorToMessage(error),
+          data: { id },
+        },
       });
       throw new InternalServerErrorException();
     }
@@ -107,7 +119,11 @@ export class UserService {
       return omit(user, ['password']) as User;
     } catch (error) {
       this.logger.error({
-        message: { function: this.create.name, error: error.message },
+        message: {
+          function: this.create.name,
+          error: mapErrorToMessage(error),
+          data: { username: userData.username },
+        },
       });
       throw new InternalServerErrorException();
     }
@@ -130,7 +146,11 @@ export class UserService {
       await this.userRepository.update(id, updateData);
     } catch (error) {
       this.logger.error({
-        message: { function: this.update.name, error: error.message },
+        message: {
+          function: this.update.name,
+          error: mapErrorToMessage(error),
+          data: { ...userData },
+        },
       });
       throw new InternalServerErrorException();
     }
@@ -148,7 +168,11 @@ export class UserService {
       );
     } catch (error) {
       this.logger.error({
-        message: { function: this.delete.name, error: error.message },
+        message: {
+          function: this.delete.name,
+          error: mapErrorToMessage(error),
+          data: { userId },
+        },
       });
       throw new InternalServerErrorException();
     }

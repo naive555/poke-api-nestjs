@@ -37,3 +37,14 @@ export const getEnvFilePath = (env?: string): string => {
 
   return defaultEnv;
 };
+
+export const mapErrorToMessage = (error: unknown): string => {
+  let errorMessage = 'An unexpected error occurred';
+  if (error instanceof Error) {
+    errorMessage = error.message;
+  } else {
+    errorMessage = String(error);
+  }
+
+  return errorMessage;
+};

@@ -28,7 +28,7 @@ export class LoggingInterceptor implements NestInterceptor {
           `${method} ${originalUrl} ${response.statusCode} - ${delay}ms - user:${userId}`,
         );
       }),
-      catchError((error) => {
+      catchError((error: Error) => {
         const delay = Date.now() - now;
         this.logger.error(
           `${method} ${originalUrl} ${response.statusCode} - ${delay}ms - user:${userId} - ${error.message}`,
