@@ -78,6 +78,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  app.enableShutdownHooks();
+
   await app.listen(port, '0.0.0.0');
 
   logger.log(
@@ -86,4 +88,4 @@ async function bootstrap() {
   );
 }
 
-bootstrap();
+void bootstrap();
