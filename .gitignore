@@ -36,12 +36,11 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # dotenv environment variable files
+# Deny every .env variant by default so a new one (.env.prod, .env.staging...)
+# is ignored the moment it is created, then re-admit the committed template.
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.docker
-.env.local
+.env.*
+!.env.example
 
 # temp directory
 .temp

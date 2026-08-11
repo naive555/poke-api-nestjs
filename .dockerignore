@@ -47,6 +47,15 @@ tests
 *.test.js
 
 # ───────────────────────────────
+# 🔐 Env files
+# ───────────────────────────────
+# The builder stage does `COPY . .`, so anything not excluded here lands in a
+# build layer. Env files in particular must never be baked into an image.
+.env
+.env.*
+!.env.example
+
+# ───────────────────────────────
 # 🪶 Miscellaneous
 # ───────────────────────────────
 README.md
