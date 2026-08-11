@@ -1,0 +1,126 @@
+# Production stack. Run explicitly:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Differences from the local docker-compose.yml:
+#   - Postgres and Redis publish no host ports; they are reachable only on
+#     poke-network.
+#   - No env_file. Every value is interpolated from the environment the deploy
+#     platform provides, and `${VAR:?...}` makes compose refuse to start rather
+#     than silently substituting an empty string.
+#   - Migrations run as a one-shot service before the app starts, so N app
+#     replicas never race each other applying the same migration.
+#
+# If you run Postgres as a managed service (RDS, Cloud SQL), drop the psql
+# service here and point DATABASE_HOST at the managed endpoint.
+name: poke-api
+
+services:
+  redis:
+    container_name: poke_redis
+    image: redis:8-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - poke-network
+
+  psql:
+    container_name: poke_db
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: "${DATABASE_DB:?DATABASE_DB is required}"
+      POSTGRES_USER: "${DATABASE_USER:?DATABASE_USER is required}"
+      POSTGRES_PASSWORD: "${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - psql_data:/var/lib/postgresql/data
+    networks:
+      - poke-network
+
+  # Runs to completion, then the app starts. Exits non-zero on a failed
+  # migration, which keeps the old app version serving instead of rolling out
+  # against a half-applied schema.
+  migrate:
+    image: ${APP_IMAGE:-poke-api:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["bun", "run", "migration:run:prod"]
+    restart: "no"
+    depends_on:
+      psql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: "${DATABASE_HOST:-poke_db}"
+      DATABASE_PORT: "${DATABASE_PORT:-5432}"
+      DATABASE_USER: "${DATABASE_USER:?DATABASE_USER is required}"
+      DATABASE_PASSWORD: "${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}"
+      DATABASE_DB: "${DATABASE_DB:?DATABASE_DB is required}"
+    networks:
+      - poke-network
+
+  app:
+    container_name: poke_app
+    image: ${APP_IMAGE:-poke-api:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      psql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${PORT:-3001}:3001"
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NAME: "${NAME:-PokeAPI: Pokemon API}"
+      VERSION: "${VERSION:-0.0.1}"
+      PORT: 3001
+      CORS: "${CORS:-false}"
+      CORS_DOMAINS: "${CORS_DOMAINS:-}"
+
+      # Injected by the platform's secret store - never from a file in the repo.
+      APP_JWT_SECRET: "${APP_JWT_SECRET:?APP_JWT_SECRET is required}"
+      APP_JWT_EXPIRES_IN: "${APP_JWT_EXPIRES_IN:-3600}"
+      APP_JWT_ISS: "${APP_JWT_ISS:-poke-api}"
+      APP_JWT_AUD: "${APP_JWT_AUD:?APP_JWT_AUD is required}"
+
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: "${DATABASE_HOST:-poke_db}"
+      DATABASE_PORT: "${DATABASE_PORT:-5432}"
+      DATABASE_USER: "${DATABASE_USER:?DATABASE_USER is required}"
+      DATABASE_PASSWORD: "${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}"
+      DATABASE_DB: "${DATABASE_DB:?DATABASE_DB is required}"
+      # The migrate service above owns the schema.
+      DATABASE_MIGRATIONS_RUN: "false"
+      DATABASE_SYNCHRONIZE: "false"
+
+      REDIS_CLUSTER: "false"
+      REDIS_HOST: "${REDIS_HOST:-poke_redis}"
+      REDIS_PORT: "${REDIS_PORT:-6379}"
+      REDIS_DB: "${REDIS_DB:-0}"
+      REDIS_USERNAME: "${REDIS_USERNAME:-}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+    networks:
+      - poke-network
+
+networks:
+  poke-network:
+    driver: bridge
+
+volumes:
+  psql_data:

@@ -5,13 +5,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AppConfigModule } from './config/app.config.module';
+import { HealthController } from './health/health.controller';
 import { LoggingInterceptor } from './middleware/logging.interceptor';
 import { PokemonModule } from './pokemon/pokemon.module';
 import { UserModule } from './user/user.module';
 
 @Module({
   imports: [AppConfigModule, AuthModule, UserModule, PokemonModule],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
     {

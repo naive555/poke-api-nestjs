@@ -33,7 +33,9 @@ const REDACTED_PATHS = [
 ];
 
 // Endpoints that would otherwise flood the stream without telling us anything.
-const UNLOGGED_PATHS = ['/api/docs'];
+// /api/health is polled by the container healthcheck every few seconds; logging
+// it would bury real traffic.
+const UNLOGGED_PATHS = ['/api/docs', '/api/health'];
 
 const MAX_ERROR_CAUSE_DEPTH = 3;
 
