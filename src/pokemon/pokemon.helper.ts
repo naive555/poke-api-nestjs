@@ -32,8 +32,26 @@ import { IPokeApi, IPokeApiList, IPokemon } from './pokemon.interface';
 export class PokemonHelper implements OnModuleInit {
   private readonly logger = new Logger(this.constructor.name);
 
-  async onModuleInit() {
-    await this.getPokemons();
+  onModuleInit() {
+    // Deliberately not awaited. An empty catalogue is a latency problem, not a
+    // correctness one - getPokemons() fills it on the first request either way -
+    // so bootstrap must never hang on a third-party API that may be slow or down.
+    void this.warmUpCatalogue();
+  }
+
+  /**
+   * Best-effort catalogue warm-up. Every failure is swallowed on purpose: this
+   * runs outside any request, and the request path retries the same work.
+   */
+  private async warmUpCatalogue(): Promise<void> {
+    try {
+      await this.getPokemons();
+    } catch (error) {
+      this.logger.warn(
+        { err: error },
+        'Catalogue warm-up failed, first request will retry',
+      );
+    }
   }
 
   constructor(
@@ -84,8 +102,18 @@ export class PokemonHelper implements OnModuleInit {
 
     const CHUNK_SIZE = 100;
     const chunks = chunk(pokemonNames, CHUNK_SIZE);
+    // A deterministic jobId makes the enqueue idempotent: replicas booting at
+    // the same time against an empty database all produce the same ids, and Bull
+    // keeps only the first. removeOnComplete lets a later re-seed through once
+    // the batch has finished rather than blocking that id forever.
     await Promise.all(
-      chunks.map((names) => this.pokemonQueue.add(POKEMON_JOB_NAME, { names })),
+      chunks.map((names, index) =>
+        this.pokemonQueue.add(
+          POKEMON_JOB_NAME,
+          { names },
+          { jobId: `${POKEMON_JOB_NAME}:${index}`, removeOnComplete: true },
+        ),
+      ),
     );
 
     return pokemonNames;
