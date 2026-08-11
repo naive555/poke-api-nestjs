@@ -256,9 +256,8 @@ bun run test:e2e
 bun run test:cov
 ```
 
-Note: the generated `*.controller.spec.ts` scaffolds for `auth`, `user` and
-`pokemon` instantiate the real modules without mocking their dependencies, so
-they fail on DI resolution. They need proper test doubles.
+Controllers and services are unit tested with their dependencies replaced by
+`useValue` doubles, so the suite needs neither Postgres nor Redis running.
 
 ---
 
