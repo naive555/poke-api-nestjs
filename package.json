@@ -21,7 +21,9 @@
     "migration:generate": "bun ./node_modules/typeorm/cli.js migration:generate -d src/database/data-source.ts",
     "migration:run": "bun ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
     "migration:revert": "bun ./node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts",
-    "migration:run:prod": "bun ./node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js"
+    "migration:run:prod": "bun ./node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js",
+    "migration:revert:prod": "bun ./node_modules/typeorm/cli.js migration:revert -d dist/database/data-source.js",
+    "migration:show:prod": "bun ./node_modules/typeorm/cli.js migration:show -d dist/database/data-source.js"
   },
   "dependencies": {
     "@fastify/compress": "^8.0.1",
