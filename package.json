@@ -53,7 +53,6 @@
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.7",
     "nestjs-pino": "^4.6.1",
-    "p-limit": "^3.1.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
