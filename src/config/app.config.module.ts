@@ -10,6 +10,7 @@ import { LoggerModule } from 'nestjs-pino';
 import bcryptConfig from './bcrypt.config';
 import commonConfig from './common.config';
 import databaseConfig from './database.config';
+import { validateEnv } from './env.validation';
 import jwtConfig from './jwt.config';
 import loggerConfig, { loggerModuleFactory } from './logger.config';
 import redisConfig from './redis.config';
@@ -28,6 +29,7 @@ import { getEnvFilePath } from '../utility/common.function';
       ],
       isGlobal: true,
       envFilePath: getEnvFilePath(process.env.NODE_ENV),
+      validate: validateEnv,
     }),
     LoggerModule.forRootAsync({
       useFactory: loggerModuleFactory,

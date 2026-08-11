@@ -1,3 +1,6 @@
+import { IncomingMessage } from 'http';
+
+import { RequestMethod } from '@nestjs/common';
 import { ConfigService, registerAs } from '@nestjs/config';
 import { Params } from 'nestjs-pino';
 import pino from 'pino';
@@ -33,7 +36,9 @@ const REDACTED_PATHS = [
 ];
 
 // Endpoints that would otherwise flood the stream without telling us anything.
-const UNLOGGED_PATHS = ['/api/docs'];
+// /api/health is polled by the container healthcheck every few seconds; logging
+// it would bury real traffic.
+const UNLOGGED_PATHS = ['/api/docs', '/api/health'];
 
 const MAX_ERROR_CAUSE_DEPTH = 3;
 
@@ -67,6 +72,10 @@ const serializeError = (input: unknown, depth = 0): Record<string, unknown> => {
 export const loggerModuleFactory = (configService: ConfigService): Params => ({
   // Lets the interceptor attach request context to the access log line.
   assignResponse: true,
+  // nestjs-pino still defaults to the bare '*' wildcard, which path-to-regexp
+  // v8 no longer accepts: Nest auto-converts it and warns twice on every boot.
+  // Naming the parameter states what the auto-conversion was guessing at.
+  forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
   pinoHttp: {
     level: configService.get<string>('logger.level'),
     base: {
@@ -99,8 +108,17 @@ export const loggerModuleFactory = (configService: ConfigService): Params => ({
     customErrorMessage: (request, response) =>
       `${request.method} ${request.url} ${response.statusCode}`,
     autoLogging: {
-      ignore: (request) =>
-        UNLOGGED_PATHS.some((path) => request.url?.startsWith(path)),
+      // nestjs-pino mounts its middleware at /api/*, and @fastify/middie strips
+      // that prefix from req.url for the duration of the middleware chain - so
+      // /api/health arrives here as /health. It restores req.url afterwards,
+      // which is why the emitted line still shows the full path. originalUrl is
+      // the only field carrying it at this point.
+      ignore: (request) => {
+        const url =
+          (request as IncomingMessage & { originalUrl?: string }).originalUrl ??
+          request.url;
+        return UNLOGGED_PATHS.some((path) => url?.startsWith(path));
+      },
     },
     transport: configService.get<boolean>('logger.pretty')
       ? {
