@@ -1,3 +1,5 @@
+import { IncomingMessage } from 'http';
+
 import { ConfigService, registerAs } from '@nestjs/config';
 import { Params } from 'nestjs-pino';
 import pino from 'pino';
@@ -101,8 +103,17 @@ export const loggerModuleFactory = (configService: ConfigService): Params => ({
     customErrorMessage: (request, response) =>
       `${request.method} ${request.url} ${response.statusCode}`,
     autoLogging: {
-      ignore: (request) =>
-        UNLOGGED_PATHS.some((path) => request.url?.startsWith(path)),
+      // nestjs-pino mounts its middleware at /api/*, and @fastify/middie strips
+      // that prefix from req.url for the duration of the middleware chain - so
+      // /api/health arrives here as /health. It restores req.url afterwards,
+      // which is why the emitted line still shows the full path. originalUrl is
+      // the only field carrying it at this point.
+      ignore: (request) => {
+        const url =
+          (request as IncomingMessage & { originalUrl?: string }).originalUrl ??
+          request.url;
+        return UNLOGGED_PATHS.some((path) => url?.startsWith(path));
+      },
     },
     transport: configService.get<boolean>('logger.pretty')
       ? {
