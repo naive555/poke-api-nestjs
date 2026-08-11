@@ -1,5 +1,6 @@
 import { IncomingMessage } from 'http';
 
+import { RequestMethod } from '@nestjs/common';
 import { ConfigService, registerAs } from '@nestjs/config';
 import { Params } from 'nestjs-pino';
 import pino from 'pino';
@@ -71,6 +72,10 @@ const serializeError = (input: unknown, depth = 0): Record<string, unknown> => {
 export const loggerModuleFactory = (configService: ConfigService): Params => ({
   // Lets the interceptor attach request context to the access log line.
   assignResponse: true,
+  // nestjs-pino still defaults to the bare '*' wildcard, which path-to-regexp
+  // v8 no longer accepts: Nest auto-converts it and warns twice on every boot.
+  // Naming the parameter states what the auto-conversion was guessing at.
+  forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
   pinoHttp: {
     level: configService.get<string>('logger.level'),
     base: {
