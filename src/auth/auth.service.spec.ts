@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { EncryptService } from '../encrypt/encrypt.service';
 import { User } from '../user/user.entity';
 import { UserService } from '../user/user.service';
 import { USER_SESSION_KEY } from '../utility/common.constant';
@@ -60,11 +61,11 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: UserService, useValue: mockUserService },
         { provide: JwtService, useValue: mockJwtService },
+        { provide: EncryptService, useValue: mockEncrypt },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    (service as any).encrypt = mockEncrypt;
   });
 
   afterEach(() => {

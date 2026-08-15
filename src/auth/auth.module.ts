@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { EncryptModule } from '../encrypt/encrypt.module';
 import { User } from '../user/user.entity';
 import { UserModule } from '../user/user.module';
 import { UserService } from '../user/user.service';
@@ -15,6 +16,7 @@ import { LocalStrategy } from './guards/local.strategy';
   imports: [
     TypeOrmModule.forFeature([User]),
     UserModule,
+    EncryptModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => configService.get('jwt'),
       inject: [ConfigService],

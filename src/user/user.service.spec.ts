@@ -2,13 +2,12 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Like, Not } from 'typeorm';
 
+import { EncryptService } from '../encrypt/encrypt.service';
 import { EStatus } from '../utility/common.enum';
-import { Encrypt } from '../utility/encrypt';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
 import { User } from './user.entity';
 import { UserService } from './user.service';
@@ -32,7 +31,6 @@ const mockUserRepository = {
   exists: jest.fn(),
 };
 
-const mockConfigService = { get: jest.fn() };
 const mockEncrypt = { hashPassword: jest.fn() };
 
 describe('UserService', () => {
@@ -43,15 +41,11 @@ describe('UserService', () => {
       providers: [
         UserService,
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
-        { provide: ConfigService, useValue: mockConfigService },
+        { provide: EncryptService, useValue: mockEncrypt },
       ],
-    })
-      .overrideProvider(Encrypt)
-      .useValue(mockEncrypt)
-      .compile();
+    }).compile();
 
     service = module.get<UserService>(UserService);
-    (service as any).encrypt = mockEncrypt;
   });
 
   afterEach(() => {

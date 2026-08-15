@@ -3,22 +3,19 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { omit } from 'lodash';
 import { Like, Not, Repository } from 'typeorm';
 
+import { EncryptService } from '../encrypt/encrypt.service';
 import { EStatus } from '../utility/common.enum';
-import { Encrypt } from '../utility/encrypt';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
 import { User } from './user.entity';
 
 @Injectable()
 export class UserService {
-  private readonly encrypt = new Encrypt(this.configService);
-
   constructor(
-    private readonly configService: ConfigService,
+    private readonly encrypt: EncryptService,
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,

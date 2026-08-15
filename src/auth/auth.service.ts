@@ -12,19 +12,18 @@ import { omit } from 'lodash';
 import { CreateUserDto } from '../user/dto/user.dto';
 import { User } from '../user/user.entity';
 import { UserService } from '../user/user.service';
+import { EncryptService } from '../encrypt/encrypt.service';
 import { USER_SESSION_KEY } from '../utility/common.constant';
-import { Encrypt } from '../utility/encrypt';
 import { IAuthPayload, IAuthResponse } from './auth.interface';
 
 @Injectable()
 export class AuthService {
-  private readonly encrypt = new Encrypt(this.configService);
-
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly encrypt: EncryptService,
   ) {}
 
   async validateUser(username: string, password: string): Promise<User> {
